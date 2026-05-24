@@ -329,7 +329,10 @@ def test_pass_runs_on_pytorch_handler():
 
 @pytest.mark.integration
 def test_pass_runs_on_hf_handler_no_unwrapped_warning():
-    """TorchPruningPass on microsoft/resnet-50 must produce no unwrapped-parameter warning."""
+    """TorchPruningPass on microsoft/resnet-50 must produce no unwrapped-parameter warning.
+
+    Also asserts it returns a PyTorchModelHandler with a loadable TorchScript model.
+    """
     handler = HfModelHandler(
         model_path="microsoft/resnet-50",
         task="image-classification",
@@ -352,4 +355,7 @@ def test_pass_runs_on_hf_handler_no_unwrapped_warning():
 
         unwrapped = [w for w in caught if "Unwrapped parameters" in str(w.message)]
         assert unwrapped == [], f"Got {len(unwrapped)} unwrapped-parameter warning(s)"
-        assert out_handler is not None
+        assert isinstance(out_handler, PyTorchModelHandler)
+        pruned = out_handler.load_model()
+        out = pruned(torch.randn(1, 3, 224, 224))
+        assert out.shape == (1, 1000)

@@ -30,16 +30,14 @@ passes:
     type: TorchPruningPass
     config:
       pruning_ratio: 0.10
-      importance: magnitude
-      global_pruning: false
-      calibration_steps: 10
-      round_to: 8
+      importance: lamp
+      global_pruning: true
       ignored_layers: ["classifier.1"]
 
 engine:
   host: local_system
   target: local_system
   cache_dir: cache
-  clean_cache: false
-  output_dir: workflows/smollm2-pruning/outputs/magnitude_0.10
+  clean_cache: true
+  output_dir: examples/resnet50_pruning/outputs/lamp_0.10
   log_severity_level: 1

@@ -221,7 +221,7 @@ def prune_model(  # noqa: PLR0913
     if output_transform is not None:
         kwargs["output_transform"] = output_transform
 
-    pruner = tp.pruner.MagnitudePruner(model, example_inputs, **kwargs)
+    pruner = tp.pruner.BasePruner(model, example_inputs, **kwargs)
 
     is_gradient_based = importance in _GRADIENT_BASED
     for _ in range(iterative_steps):
