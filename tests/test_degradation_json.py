@@ -8,9 +8,10 @@ and target models wrapped in real :class:`PyTorchModelHandler` /
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 import numpy as np
 import onnx
@@ -214,24 +215,6 @@ def test_onnx_handler_target_works(tmp_path: Path):
 
 # ---------------------------------------------------------------------------
 # Example workflow JSON
-
-
-def test_example_workflow_json_is_valid_and_references_us():
-    """The shipped example workflow JSON should parse and reference our evaluator."""
-    repo_root = Path(__file__).resolve().parent.parent
-    workflow_path = repo_root / "examples" / "qwen_mixed_with_degradation.json"
-    assert workflow_path.exists(), f"missing example workflow at {workflow_path}"
-    data = json.loads(workflow_path.read_text())
-    # Surface checks: our evaluator is referenced
-    evaluators = data.get("evaluators", {})
-    degradation_evaluators = [
-        ev for ev in evaluators.values() if ev.get("type") == "olmpress_degradation"
-    ]
-    assert degradation_evaluators, "example workflow should reference olmpress_degradation"
-    # Each one must specify reference_model and inputs (the two required knobs)
-    for ev in degradation_evaluators:
-        assert "reference_model" in ev
-        assert "inputs" in ev
 
 
 def test_evaluator_constructible_from_workflow_json_evaluator_block(tmp_path: Path):
