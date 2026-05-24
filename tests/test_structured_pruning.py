@@ -14,11 +14,10 @@ from olive.model import HfModelHandler, PyTorchModelHandler
 from olive.passes.olive_pass import Pass
 from torch import nn
 
-from olmpress.passes.pytorch.sparsification.structured_pruning import (
-    TorchPruningPass,
-    _collect_unwrapped_parameters,
-    _resolve_ignored_layers,
-    prune_model,
+from olmpress.passes.pytorch.structured_pruning import TorchPruningPass, prune_model
+from olmpress.passes.pytorch.structured_pruning.utils import (
+    collect_unwrapped_parameters,
+    resolve_ignored_layers,
 )
 
 # ---------------------------------------------------------------------------
@@ -215,7 +214,7 @@ def test_prune_model_multivariable_taylor():
 
 
 # ---------------------------------------------------------------------------
-# _resolve_ignored_layers
+# resolve_ignored_layers
 
 
 def test_collect_unwrapped_parameters_layernorm():
@@ -229,7 +228,7 @@ def test_collect_unwrapped_parameters_layernorm():
             return self.fc(self.ln(x))
 
     model = _ModelWithLN()
-    params = _collect_unwrapped_parameters(model)
+    params = collect_unwrapped_parameters(model)
     param_ids = {id(p) for p, _ in params}
     assert id(model.ln.weight) in param_ids
     assert id(model.ln.bias) in param_ids
@@ -255,13 +254,13 @@ def test_collect_unwrapped_parameters_rms_like():
             return self.fc(self.norm(x))
 
     model = _ModelWithRMS()
-    params = _collect_unwrapped_parameters(model)
+    params = collect_unwrapped_parameters(model)
     assert any(id(p) == id(model.norm.weight) for p, _ in params)
 
 
 def test_collect_unwrapped_parameters_skips_linear():
     model = TinyMLP()
-    params = _collect_unwrapped_parameters(model)
+    params = collect_unwrapped_parameters(model)
     linear_param_ids = {
         id(p) for m in model.modules() if isinstance(m, nn.Linear) for p in m.parameters()
     }
@@ -271,14 +270,14 @@ def test_collect_unwrapped_parameters_skips_linear():
 
 def test_resolve_ignored_layers_valid():
     model = TinyMLP()
-    result = _resolve_ignored_layers(model, ["head"])
+    result = resolve_ignored_layers(model, ["head"])
     assert result == [model.head]
 
 
 def test_resolve_ignored_layers_missing_warns(caplog: pytest.LogCaptureFixture):
     model = TinyMLP()
     with caplog.at_level(logging.WARNING):
-        result = _resolve_ignored_layers(model, ["does_not_exist"])
+        result = resolve_ignored_layers(model, ["does_not_exist"])
     assert result == []
     assert "does_not_exist" in caplog.text
 

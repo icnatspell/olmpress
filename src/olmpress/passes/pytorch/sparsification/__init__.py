@@ -1,5 +1,5 @@
 """Sparsification passes (pruning, etc.) for PyTorch models."""
 
-from olmpress.passes.pytorch.sparsification.structured_pruning import TorchPruningPass, prune_model
+from olmpress.passes.pytorch.structured_pruning import TorchPruningPass, prune_model
 
 __all__ = ["TorchPruningPass", "prune_model"]
