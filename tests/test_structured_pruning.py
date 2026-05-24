@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import logging
 import tempfile
+import warnings
 from pathlib import Path
 
 import pytest
 import torch
 from olive.hardware.accelerator import AcceleratorSpec, Device, ExecutionProvider
-from olive.model import PyTorchModelHandler
+from olive.model import HfModelHandler, PyTorchModelHandler
 from olive.passes.olive_pass import Pass
 from torch import nn
 
 from olmpress.passes.pytorch.sparsification.structured_pruning import (
     TorchPruningPass,
+    _collect_unwrapped_parameters,
     _resolve_ignored_layers,
     prune_model,
 )
@@ -216,6 +218,57 @@ def test_prune_model_multivariable_taylor():
 # _resolve_ignored_layers
 
 
+def test_collect_unwrapped_parameters_layernorm():
+    class _ModelWithLN(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.ln = nn.LayerNorm(16)
+            self.fc = nn.Linear(16, 8)
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return self.fc(self.ln(x))
+
+    model = _ModelWithLN()
+    params = _collect_unwrapped_parameters(model)
+    param_ids = {id(p) for p, _ in params}
+    assert id(model.ln.weight) in param_ids
+    assert id(model.ln.bias) in param_ids
+    assert all(dim == 0 for _, dim in params)
+
+
+def test_collect_unwrapped_parameters_rms_like():
+    class _RMSNorm(nn.Module):
+        def __init__(self, dim: int):
+            super().__init__()
+            self.weight = nn.Parameter(torch.ones(dim))
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return x * self.weight
+
+    class _ModelWithRMS(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.norm = _RMSNorm(16)
+            self.fc = nn.Linear(16, 8)
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return self.fc(self.norm(x))
+
+    model = _ModelWithRMS()
+    params = _collect_unwrapped_parameters(model)
+    assert any(id(p) == id(model.norm.weight) for p, _ in params)
+
+
+def test_collect_unwrapped_parameters_skips_linear():
+    model = TinyMLP()
+    params = _collect_unwrapped_parameters(model)
+    linear_param_ids = {
+        id(p) for m in model.modules() if isinstance(m, nn.Linear) for p in m.parameters()
+    }
+    collected_ids = {id(p) for p, _ in params}
+    assert collected_ids.isdisjoint(linear_param_ids)
+
+
 def test_resolve_ignored_layers_valid():
     model = TinyMLP()
     result = _resolve_ignored_layers(model, ["head"])
@@ -269,3 +322,35 @@ def test_pass_runs_on_pytorch_handler():
 
         pruned: nn.Module = out_handler.load_model()  # type: ignore[assignment]
         assert _param_count(pruned) < before
+
+
+# ---------------------------------------------------------------------------
+# Integration: TorchPruningPass through Olive HfModelHandler
+
+
+@pytest.mark.integration
+def test_pass_runs_on_hf_handler_no_unwrapped_warning():
+    """TorchPruningPass on microsoft/resnet-50 must produce no unwrapped-parameter warning."""
+    handler = HfModelHandler(
+        model_path="microsoft/resnet-50",
+        task="image-classification",
+    )
+    accel = AcceleratorSpec(Device.CPU, ExecutionProvider.CPUExecutionProvider)
+    cfg_class, _ = TorchPruningPass.get_config_class(accel)
+    cfg = cfg_class(
+        pruning_ratio=0.25,
+        importance="magnitude",
+        global_pruning=False,
+        example_input_shape=[1, 3, 224, 224],
+        ignored_layers=["classifier.1"],
+    )
+    pass_obj = TorchPruningPass(accel, cfg)  # pyrefly: ignore[bad-argument-type]
+
+    with tempfile.TemporaryDirectory() as out_dir:
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            out_handler = pass_obj.run(handler, str(Path(out_dir) / "pruned"))
+
+        unwrapped = [w for w in caught if "Unwrapped parameters" in str(w.message)]
+        assert unwrapped == [], f"Got {len(unwrapped)} unwrapped-parameter warning(s)"
+        assert out_handler is not None

@@ -128,6 +128,46 @@ def _accumulate_gradients(
         model.train(training)
 
 
+def _collect_unwrapped_parameters(
+    model: nn.Module,
+) -> list[tuple[torch.nn.Parameter, int]]:
+    """Return (param, 0) for LayerNorm and RMSNorm-like 1-D scale parameters.
+
+    Custom norm modules (e.g. LlamaRMSNorm) sit outside torch-pruning's normal
+    dependency graph. Passing them explicitly as unwrapped_parameters suppresses
+    the UserWarning and ensures they are pruned along the correct dimension (0).
+    """
+    seen: set[int] = set()
+    result: list[tuple[torch.nn.Parameter, int]] = []
+    _skip = (
+        nn.Linear,
+        nn.Conv2d,
+        nn.Conv1d,
+        nn.Embedding,
+        nn.LayerNorm,
+        nn.BatchNorm1d,
+        nn.BatchNorm2d,
+        nn.BatchNorm3d,
+        nn.GroupNorm,
+        nn.InstanceNorm2d,
+    )
+    for module in model.modules():
+        is_layernorm = isinstance(module, nn.LayerNorm)
+        is_rms_like = (
+            not isinstance(module, _skip)
+            and hasattr(module, "weight")
+            and isinstance(module.weight, nn.Parameter)
+            and module.weight.dim() == 1
+        )
+        if is_layernorm or is_rms_like:
+            for attr in ("weight", "bias"):
+                p = getattr(module, attr, None)
+                if isinstance(p, nn.Parameter) and id(p) not in seen:
+                    seen.add(id(p))
+                    result.append((p, 0))
+    return result
+
+
 def prune_model(  # noqa: PLR0913
     model: nn.Module,
     example_inputs: torch.Tensor,
@@ -145,6 +185,7 @@ def prune_model(  # noqa: PLR0913
     multivariable: bool = False,
     num_classes: int = 100,
     calibration_steps: int = 10,
+    output_transform: Any = None,  # noqa: ANN401
 ) -> nn.Module:
     """Apply structured channel pruning to *model* in-place and return it."""
     import torch_pruning as tp  # noqa: PLC0415
@@ -164,9 +205,12 @@ def prune_model(  # noqa: PLR0913
         "global_pruning": global_pruning,
         "max_pruning_ratio": max_pruning_ratio,
         "isomorphic": isomorphic,
+        "unwrapped_parameters": _collect_unwrapped_parameters(model),
     }
     if round_to is not None:
         kwargs["round_to"] = round_to
+    if output_transform is not None:
+        kwargs["output_transform"] = output_transform
 
     pruner = tp.pruner.MagnitudePruner(model, example_inputs, **kwargs)
 
@@ -307,10 +351,15 @@ class TorchPruningPass(Pass):
         output_model_path: str,
     ) -> HfModelHandler:
         pt_model = handler.load_model()
-        vocab_size = pt_model.config.vocab_size  # type: ignore[union-attr]
-        example_inputs = torch.randint(0, vocab_size, list(config.example_input_shape))
+        cfg = pt_model.config  # type: ignore[union-attr]
+        if hasattr(cfg, "vocab_size"):
+            example_inputs = torch.randint(0, cfg.vocab_size, list(config.example_input_shape))
+        else:
+            example_inputs = torch.randn(list(config.example_input_shape))
 
         ignored = _resolve_ignored_layers(pt_model, config.ignored_layers or [])
+        # HF models return ModelOutput tuples; output_transform extracts the logits
+        # tensor so torch-pruning can trace the dependency graph correctly.
         prune_model(
             pt_model,
             example_inputs=example_inputs,
@@ -327,6 +376,7 @@ class TorchPruningPass(Pass):
             multivariable=config.multivariable,
             num_classes=config.num_classes,
             calibration_steps=config.calibration_steps,
+            output_transform=lambda out: (out.logits if hasattr(out, "logits") else out[0]).sum(),
         )
 
         out_dir = Path(output_model_path)

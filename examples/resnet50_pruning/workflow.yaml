@@ -1,33 +1,37 @@
-# Structured pruning of microsoft/resnet-50 using olmpress + Olive.
+# Structured pruning via olmpress + Olive.
 #
 # Run from the project root:
 #   uv run olmpress run --config examples/resnet50_pruning/workflow.yaml
 #
-# This workflow applies TorchPruningPass and saves the pruned TorchScript
-# model.  Evaluate the result separately:
-#   uv run python examples/resnet50_pruning/evaluate.py \
-#       --model workflows/resnet50-pruning/outputs/lamp_0.10/model.pt
+# Switch between HfModel and PyTorchModel by uncommenting the relevant block.
 
+# --- Option A: HuggingFace model (LLM) ---
 input_model:
-  type: PyTorchModel
-  model_script: examples/resnet50_pruning/resnet50_model.py
-  model_loader: load_model
-  dummy_inputs_func: get_dummy_inputs
+  type: HfModel
+  model_path: HuggingFaceTB/SmolLM2-135M-Instruct
+  task: text-generation
+
+# --- Option B: PyTorchModel (ResNet-50) ---
+# input_model:
+#   type: PyTorchModel
+#   model_script: examples/resnet50_pruning/resnet50_model.py
+#   model_loader: load_model
+#   dummy_inputs_func: get_dummy_inputs
 
 systems:
   local_system:
     type: LocalSystem
     accelerators:
       - execution_providers:
-          - CUDAExecutionProvider
+          - CPUExecutionProvider
 
 passes:
   pruning:
     type: TorchPruningPass
     config:
       pruning_ratio: 0.10
-      importance: lamp
-      global_pruning: true
+      importance: magnitude
+      global_pruning: false
       calibration_steps: 10
       round_to: 8
 
@@ -36,5 +40,5 @@ engine:
   target: local_system
   cache_dir: cache
   clean_cache: false
-  output_dir: workflows/resnet50-pruning/outputs/lamp_0.10
+  output_dir: workflows/smollm2-pruning/outputs/magnitude_0.10
   log_severity_level: 1
