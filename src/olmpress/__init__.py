@@ -26,9 +26,16 @@ def main() -> None:
     if args.command == "run":
         # olmpress is already imported at this point, so all @Registry.register
         # decorators have fired and olmpress_degradation is visible to Olive.
+        from olive.package_config import OlivePackageConfig  # noqa: PLC0415
         from olive.workflows import run as olive_run  # noqa: PLC0415
 
-        olive_run(args.config)
+        pkg = OlivePackageConfig.load_default_config().model_dump()
+        pkg["passes"]["TorchPruningPass"] = {
+            "module_path": (
+                "olmpress.passes.pytorch.sparsification.structured_pruning.TorchPruningPass"
+            )
+        }
+        olive_run(args.config, package_config=pkg)
     else:
         parser.print_help()
         sys.exit(0)

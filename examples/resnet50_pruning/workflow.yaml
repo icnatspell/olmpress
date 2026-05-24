@@ -1,22 +1,12 @@
-# Structured pruning of a pretrained ResNet-50 using olmpress + Olive.
+# Structured pruning of microsoft/resnet-50 using olmpress + Olive.
 #
 # Run from the project root:
 #   uv run olmpress run --config examples/resnet50_pruning/workflow.yaml
 #
-# The workflow:
-#   1. Loads torchvision ResNet-50 (ImageNet-1k V1 weights, 25.6 M params).
-#   2. Evaluates baseline top-1 / top-5 accuracy on zh-plus/tiny-imagenet
-#      (200 ImageNet classes, freely available, no HuggingFace auth required).
-#   3. Applies TorchPruningPass (40 % channel pruning, magnitude importance).
-#   4. Evaluates the pruned model with the same accuracy metric.
-#
-# Accuracy note: tiny-imagenet covers 200 of the 1 000 ImageNet classes, so
-# absolute top-1 numbers will be higher than full ImageNet benchmarks.
-# What matters here is the delta between baseline and pruned.
-#
-# To switch to full ImageNet validation (requires ILSVRC/imagenet-1k access):
-#   1. Log in with `huggingface-cli login`.
-#   2. Change the evaluator's `dataset:` field to `ILSVRC/imagenet-1k`.
+# This workflow applies TorchPruningPass and saves the pruned TorchScript
+# model.  Evaluate the result separately:
+#   uv run python examples/resnet50_pruning/evaluate.py \
+#       --model workflows/resnet50-pruning/outputs/lamp_0.10/model.pt
 
 input_model:
   type: PyTorchModel
@@ -31,43 +21,20 @@ systems:
       - execution_providers:
           - CUDAExecutionProvider
 
-evaluators:
-  accuracy:
-    type: olmpress_imagenet_accuracy
-    dataset: zh-plus/tiny-imagenet
-    split: valid
-    num_samples: 2000
-    batch_size: 64
-    metrics:
-      - name: acc
-        type: custom
-        sub_types:
-          - name: top1
-            priority: 1
-            higher_is_better: true
-          - name: top5
-            priority: 2
-            higher_is_better: true
-
 passes:
   pruning:
     type: TorchPruningPass
     config:
-      pruning_ratio: 0.4
-      importance: magnitude
-      # Preserve the classification head so the 1 000-class output shape is
-      # unchanged and accuracy can be compared directly.
-      ignored_layers:
-        - fc
+      pruning_ratio: 0.10
+      importance: lamp
+      global_pruning: true
+      calibration_steps: 10
       round_to: 8
 
 engine:
-  evaluate_input_model: true
   host: local_system
   target: local_system
-  evaluator: accuracy
   cache_dir: cache
   clean_cache: false
-  output_dir: workflows/resnet50-pruning/outputs/magnitude-40pct
+  output_dir: workflows/resnet50-pruning/outputs/lamp_0.10
   log_severity_level: 1
-  no_artifacts: true
