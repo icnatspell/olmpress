@@ -20,6 +20,7 @@ dependencies = [
     "onnxruntime-genai-cuda>=0.13.2",
     "torch-pruning>=1.6.1",
     "torchvision>=0.26.0",
+    "evaluate>=0.4.6",
 ]
 
 [[tool.uv.index]]

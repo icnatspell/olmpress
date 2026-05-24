@@ -22,3 +22,10 @@ coverage.xml
 
 # Local Claude config
 .claude/
+
+# Olive workflow cache and model outputs
+cache/
+examples/**/outputs/
+
+# Experiment result CSVs
+results.csv

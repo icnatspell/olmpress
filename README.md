@@ -1,6 +1,6 @@
 # olmpress
 
-[![CI](https://github.com/sourqe/olmpress/actions/workflows/ci.yml/badge.svg)](https://github.com/sourqe/olmpress/actions/workflows/ci.yml)
+[![CI](https://github.com/icnatspell/olmpress/actions/workflows/ci.yml/badge.svg)](https://github.com/icnatspell/olmpress/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/managed%20with-uv-261230?logo=uv)](https://docs.astral.sh/uv/)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
