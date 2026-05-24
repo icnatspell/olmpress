@@ -133,12 +133,14 @@ def evaluate(
 # Pruning
 
 
-def prune_copy(
+def prune_copy(  # noqa: PLR0913
     base_model: nn.Module,
     variant: Variant,
     example_input: torch.Tensor,
     ignored_layers: list[nn.Module],
     round_to: int | None,
+    *,
+    global_pruning: bool = False,
 ) -> nn.Module:
     from olmpress.passes.pytorch.sparsification.structured_pruning import (  # noqa: PLC0415
         prune_model,
@@ -159,6 +161,7 @@ def prune_copy(
         importance=variant.importance,
         ignored_layers=ignored_on_copy,
         round_to=round_to,
+        global_pruning=global_pruning,
         calibration_steps=variant.calibration_steps,
     )
     return model
@@ -272,6 +275,7 @@ def main() -> None:
     ignored_layer_names = model_cfg.get("ignored_layers", [])
     ignored_layers = [m for n, m in base_model.named_modules() if n in ignored_layer_names]
     round_to = model_cfg.get("round_to")
+    global_pruning = model_cfg.get("global_pruning", False)
     example_input = torch.randn(1, 3, 224, 224)
 
     baseline_params = sum(p.numel() for p in base_model.parameters())
@@ -300,7 +304,9 @@ def main() -> None:
         label = f"{v.importance} {int(v.pruning_ratio * 100)}%"
         print(f"  {label:<28}", end=" ", flush=True)
         t0 = time.perf_counter()
-        pruned = prune_copy(base_model, v, example_input, ignored_layers, round_to)
+        pruned = prune_copy(
+            base_model, v, example_input, ignored_layers, round_to, global_pruning=global_pruning
+        )
         params = sum(p.numel() for p in pruned.parameters())
         top1, top5 = evaluate(pruned, images, labels, eval_cfg["batch_size"], device)
         elapsed = time.perf_counter() - t0
