@@ -1371,6 +1371,7 @@ dependencies = [
     { name = "requests" },
     { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "torch", version = "2.12.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
+    { name = "torch-pruning" },
     { name = "transformers" },
 ]
 
@@ -1394,6 +1395,7 @@ requires-dist = [
     { name = "requests", specifier = ">=2.31" },
     { name = "torch", marker = "sys_platform != 'linux' and sys_platform != 'win32'", specifier = ">=2.10" },
     { name = "torch", marker = "sys_platform == 'linux' or sys_platform == 'win32'", specifier = ">=2.10", index = "https://download.pytorch.org/whl/cu128" },
+    { name = "torch-pruning", specifier = ">=1.6.1" },
     { name = "transformers", specifier = ">=4.45" },
 ]
 
@@ -2522,6 +2524,20 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/9b/ad/e95e822f3538171e22640a7fbe839a1fdb666600bf6487025de2ff03b11a/torch-2.12.0-cp313-cp313t-macosx_14_0_arm64.whl", hash = "sha256:10ee1448a9f304d3b987eb4656f664ba6e4d7b410ca7a5a7c642199777a2cf88", size = 88319556, upload-time = "2026-05-13T14:54:05.574Z" },
     { url = "https://files.pythonhosted.org/packages/67/dc/ac069f8d6e8be701535921141055293b0d4819d3d7f224a4612cf157c7f9/torch-2.12.0-cp314-cp314-macosx_14_0_arm64.whl", hash = "sha256:f7dfae4a519197dfa050e98d8e36378a0fb5899625a875c2b54445005a2e404e", size = 88027282, upload-time = "2026-05-13T14:53:05.258Z" },
     { url = "https://files.pythonhosted.org/packages/7b/78/2e12b37ce50a19a037d7bc62d652a5a8f27385a7b05859d6bc9204f20cfe/torch-2.12.0-cp314-cp314t-macosx_14_0_arm64.whl", hash = "sha256:b4556715c8572758625d62b6e0ae3b1f76c440221913a6fb5e100f321fb4fb02", size = 88320100, upload-time = "2026-05-13T14:51:39.955Z" },
+]
+
+[[package]]
+name = "torch-pruning"
+version = "1.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "torch", version = "2.11.0+cu128", source = { registry = "https://download.pytorch.org/whl/cu128" }, marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "torch", version = "2.12.0", source = { registry = "https://pypi.org/simple" }, marker = "sys_platform != 'linux' and sys_platform != 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/bc/43/ddacbb7f5ecbd7a1223ba57e80cadd8cfc58d05c54b8b8f529e819817f22/torch_pruning-1.6.1.tar.gz", hash = "sha256:3166ab2b700a5819d2b1db5b4a228e161bc32cc31e3022563b873ddd706fcacb", size = 89167, upload-time = "2025-09-07T17:25:48.681Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/20/bf/ac91f896d1a0c1bb4fceaac8ffd5bf8f23754d3566137e0b313b072f8f77/torch_pruning-1.6.1-py3-none-any.whl", hash = "sha256:5cb619e55bb4d1b7ce71be9782865ad4977bfe99c148fdce9c3822eab08a9c08", size = 70181, upload-time = "2025-09-07T17:25:45.819Z" },
 ]
 
 [[package]]

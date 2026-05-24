@@ -18,6 +18,7 @@ dependencies = [
     "lm-eval>=0.4.12",
     "onnxruntime-gpu>=1.26.0",
     "onnxruntime-genai-cuda>=0.13.2",
+    "torch-pruning>=1.6.1",
 ]
 
 [[tool.uv.index]]
