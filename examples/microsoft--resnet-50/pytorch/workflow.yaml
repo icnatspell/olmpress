@@ -5,7 +5,7 @@
 
 input_model:
   type: PyTorchModel
-  model_script: examples/microsoft--resnet-50/resnet50_model.py
+  model_script: examples/microsoft--resnet-50/pytorch/load_model.py
   model_loader: load_model
   dummy_inputs_func: get_dummy_inputs
 

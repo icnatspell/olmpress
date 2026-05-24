@@ -106,9 +106,9 @@ smaller drop, or fine-tune the pruned model to recover accuracy.
 examples/microsoft--resnet-50/
 ├── README.md               # this file
 ├── eval_accuracy.py        # evaluation script (baseline and pruned)
-├── resnet50_model.py       # Olive model script for PyTorchModel path
 ├── hf/
 │   └── workflow.yaml       # HfModel → TorchPruningPass → TorchScript
 └── pytorch/
+    ├── load_model.py       # Olive model script for PyTorchModel path
     └── workflow.yaml       # PyTorchModel → TorchPruningPass → TorchScript
 ```
