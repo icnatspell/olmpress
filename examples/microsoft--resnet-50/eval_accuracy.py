@@ -1,9 +1,9 @@
 """Evaluate microsoft/resnet-50 (baseline or pruned) on ILSVRC/imagenet-1k.
 
 Usage:
-    uv run python examples/resnet50_pruning/eval_accuracy.py
-    uv run python examples/resnet50_pruning/eval_accuracy.py --num-samples 200
-    uv run python examples/resnet50_pruning/eval_accuracy.py --model path/to/pruned.pt
+    uv run python examples/microsoft--resnet-50/eval_accuracy.py
+    uv run python examples/microsoft--resnet-50/eval_accuracy.py --num-samples 200
+    uv run python examples/microsoft--resnet-50/eval_accuracy.py --model path/to/pruned.pt
 """
 
 from __future__ import annotations
