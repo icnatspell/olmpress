@@ -8,8 +8,8 @@
 # --- Option A: HuggingFace model (LLM) ---
 input_model:
   type: HfModel
-  model_path: HuggingFaceTB/SmolLM2-135M-Instruct
-  task: text-generation
+  model_path: microsoft/resnet-50
+  task: image-classification
 
 # --- Option B: PyTorchModel (ResNet-50) ---
 # input_model:
@@ -34,6 +34,7 @@ passes:
       global_pruning: false
       calibration_steps: 10
       round_to: 8
+      ignored_layers: ["classifier.1"]
 
 engine:
   host: local_system

@@ -114,7 +114,11 @@ def _accumulate_gradients(
     try:
         for _ in range(steps):
             model.zero_grad()
-            out = model(example_inputs)
+            out = (
+                model(**example_inputs)
+                if isinstance(example_inputs, dict)
+                else model(example_inputs)
+            )
             if isinstance(out, dict):
                 loss = sum(v.float().sum() for v in out.values() if isinstance(v, torch.Tensor))
             elif isinstance(out, (tuple, list)):
@@ -353,9 +357,15 @@ class TorchPruningPass(Pass):
         pt_model = handler.load_model()
         cfg = pt_model.config  # type: ignore[union-attr]
         if hasattr(cfg, "vocab_size"):
-            example_inputs = torch.randint(0, cfg.vocab_size, list(config.example_input_shape))
+            example_inputs: Any = torch.randint(0, cfg.vocab_size, list(config.example_input_shape))
+        elif hasattr(cfg, "num_channels"):
+            # Vision model: infer shape from config; pass as dict so torch-pruning
+            # calls model(**inputs) rather than unpacking the tensor with *.
+            raw = getattr(cfg, "image_size", 224)
+            img = raw if isinstance(raw, int) else raw[0]
+            example_inputs = {"pixel_values": torch.randn(1, cfg.num_channels, img, img)}
         else:
-            example_inputs = torch.randn(list(config.example_input_shape))
+            example_inputs = {"pixel_values": torch.randn(list(config.example_input_shape))}
 
         ignored = _resolve_ignored_layers(pt_model, config.ignored_layers or [])
         # HF models return ModelOutput tuples; output_transform extracts the logits
