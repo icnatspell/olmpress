@@ -177,12 +177,12 @@ def test_missing_loaders_raises():
         ev.evaluate(tgt, [_make_metric(["sqnr_mean"])])
 
 
-def test_pytorch_onnx_type_mismatch_raises():
+def test_pytorch_onnx_cross_framework_requires_dict_spec():
+    # Cross-framework path requires a dict spec (for ModelBuilder); a callable has no model_path.
     ref, _ = _identical_models()
-    # Build a tiny ONNX target
     onnx_model = _build_tiny_onnx()
     ev = DegradationEvaluator(reference_model=lambda: ref, inputs=_inputs)
-    with pytest.raises(TypeError, match="type mismatch"):
+    with pytest.raises(RuntimeError, match="dict spec"):
         ev.evaluate(onnx_model, [_make_metric(["sqnr_mean"])])
 
 

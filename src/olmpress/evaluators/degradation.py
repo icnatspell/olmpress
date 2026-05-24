@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 import numpy as np
 import onnx
+import onnxruntime as ort
 import torch
 from olive.evaluator.metric_result import MetricResult, SubMetricResult, joint_metric_key
 from olive.evaluator.olive_evaluator import OliveEvaluator
@@ -133,10 +134,15 @@ class DegradationEvaluator(OliveEvaluator):
         logits_layer: str = "lm_head",
         rename: dict[str, str] | None = None,
         cpu_captures: bool = False,
+        cross_framework_precision: str = "fp32",
+        cross_framework_cache_dir: str | None = None,
         **kwargs: Any,  # noqa: ANN401
     ) -> None:
         """Configure the evaluator from callable loaders or JSON-shaped specs."""
         super().__init__(**kwargs)
+        self._reference_spec: dict[str, Any] | None = (
+            reference_model if isinstance(reference_model, dict) else None
+        )
         self._reference_loader: Callable[[], nn.Module | onnx.ModelProto] | None = (
             _coerce_model_loader(reference_model)
         )
@@ -146,6 +152,9 @@ class DegradationEvaluator(OliveEvaluator):
         self._logits_layer = logits_layer
         self._rename = rename
         self._cpu_captures = cpu_captures
+        self._cross_framework_precision = cross_framework_precision
+        self._cross_framework_cache_dir = cross_framework_cache_dir
+        self._onnx_reference_cache: onnx.ModelProto | None = None
 
     def evaluate(  # type: ignore[override]  # pyrefly: ignore [bad-override]
         self,
@@ -169,6 +178,10 @@ class DegradationEvaluator(OliveEvaluator):
         elif isinstance(reference, onnx.ModelProto) and isinstance(target, onnx.ModelProto):
             ref_caps, tgt_caps, mapping = self._run_onnx(
                 reference, target, inputs, execution_providers
+            )
+        elif isinstance(reference, nn.Module) and isinstance(target, onnx.ModelProto):
+            ref_caps, tgt_caps, mapping = self._run_cross_framework(
+                target, inputs, execution_providers
             )
         else:
             msg = (
@@ -207,6 +220,85 @@ class DegradationEvaluator(OliveEvaluator):
             tgt_caps = dict(tc)
         return ref_caps, tgt_caps, viewed
 
+    def _run_cross_framework(
+        self,
+        target: onnx.ModelProto,
+        inputs: dict[str, Any],
+        execution_providers: str | list[str] | None,  # noqa: ARG002
+    ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray], dict[str, str]]:
+        onnx_reference = self._get_onnx_reference()
+        # Force CPU: avoids CUDA-specific dtype requirements on GQA ops.
+        cpu = ["CPUExecutionProvider"]
+        np_inputs = {k: np.asarray(v) for k, v in inputs.items()}
+        # Supplement inputs separately: INT4 uses float16 KV-cache, fp32 uses float32.
+        ref_inputs = _supplement_onnx_inputs(onnx_reference, np_inputs, cpu)
+        tgt_inputs = _supplement_onnx_inputs(target, np_inputs, cpu)
+
+        ref_names = _onnx_node_outputs(onnx_reference)
+        tgt_names = _onnx_node_outputs(target)
+        rename = self._rename or {}
+        mapping = {n: rename.get(n, n) for n in ref_names if rename.get(n, n) in tgt_names}
+        mapping = _apply_onnx_view(mapping, self._view)
+        if self._logits_layer in ref_names and self._logits_layer in tgt_names:
+            mapping[self._logits_layer] = rename.get(self._logits_layer, self._logits_layer)
+
+        ref_caps = capture_onnx(onnx_reference, list(mapping.keys()), ref_inputs, providers=cpu)
+        tgt_caps = capture_onnx(target, list(mapping.values()), tgt_inputs, providers=cpu)
+        return ref_caps, tgt_caps, mapping
+
+    def _get_onnx_reference(self) -> onnx.ModelProto:
+        if self._onnx_reference_cache is not None:
+            return self._onnx_reference_cache
+
+        if self._reference_spec is None:
+            msg = (
+                "DegradationEvaluator: cross-framework comparison requires reference_model "
+                "to be a dict spec (e.g., {type: HfModel, config: {model_path: ...}})"
+            )
+            raise RuntimeError(msg)
+
+        spec = self._reference_spec
+        model_path = (spec.get("config") or spec).get("model_path")
+        if model_path is None:
+            msg = (
+                "DegradationEvaluator: cross-framework conversion requires "
+                "model_path in reference_model"
+            )
+            raise RuntimeError(msg)
+
+        import tempfile  # noqa: PLC0415
+
+        from olive.hardware.accelerator import (  # noqa: PLC0415
+            AcceleratorSpec,
+            Device,
+            ExecutionProvider,
+        )
+        from olive.model import ModelConfig  # noqa: PLC0415
+        from olive.passes.onnx.model_builder import ModelBuilder  # noqa: PLC0415
+
+        cache_dir = self._cross_framework_cache_dir or tempfile.mkdtemp(prefix="olmpress_ref_")
+        input_handler = ModelConfig.model_validate(
+            {"type": "HfModel", "config": {"model_path": model_path}}
+        ).create_model()
+        accel = AcceleratorSpec(Device.CPU, ExecutionProvider.CPUExecutionProvider)
+        cfg_class, _ = ModelBuilder.get_config_class(accel)
+        # Resolve search-space defaults to concrete values so ModelBuilder doesn't receive
+        # Categorical objects when called outside Olive's search engine.
+        cfg = cfg_class(
+            precision=self._cross_framework_precision,
+            int4_block_size=32,
+            int4_is_symmetric=True,
+            int4_algo_config="default",
+        )
+        mb = ModelBuilder(accel, cfg)  # pyrefly: ignore[bad-argument-type]
+        output_handler = mb.run(input_handler, cache_dir)
+        loaded = output_handler.load_model()
+        if not isinstance(loaded, onnx.ModelProto):
+            msg = f"ModelBuilder returned {type(loaded).__name__}, expected ModelProto"
+            raise TypeError(msg)
+        self._onnx_reference_cache = loaded
+        return loaded
+
     def _run_onnx(
         self,
         reference: onnx.ModelProto,
@@ -220,6 +312,7 @@ class DegradationEvaluator(OliveEvaluator):
         mapping = {
             n: rename.get(n, n) for n in ref_tensor_names if rename.get(n, n) in tgt_tensor_names
         }
+        mapping = _apply_onnx_view(mapping, self._view)
 
         if self._logits_layer in ref_tensor_names and self._logits_layer in tgt_tensor_names:
             mapping[self._logits_layer] = rename.get(self._logits_layer, self._logits_layer)
@@ -268,6 +361,61 @@ class DegradationEvaluator(OliveEvaluator):
                     higher_is_better=_HIGHER_IS_BETTER[kind],
                 )
         return MetricResult(root=root)
+
+
+def _apply_onnx_view(mapping: dict[str, str], view: View) -> dict[str, str]:
+    """Filter an ONNX tensor-name mapping to the subset implied by *view*."""
+    if view == "all":
+        return mapping
+    if view == "logits":
+        return {}
+    if view in ("linears", "blocks"):
+        # Keep only MatMul/Gemm node outputs — these correspond to linear layer activations.
+        return {ref: tgt for ref, tgt in mapping.items() if "/MatMul/" in ref or "/Gemm/" in ref}
+    msg = f"Unknown view: {view!r}"
+    raise ValueError(msg)
+
+
+_ORT_DTYPE_TO_NUMPY: dict[str, type] = {
+    "tensor(float)": np.float32,
+    "tensor(float16)": np.float16,
+    "tensor(int64)": np.int64,
+    "tensor(int32)": np.int32,
+    "tensor(int8)": np.int8,
+    "tensor(bool)": np.bool_,
+}
+
+
+def _supplement_onnx_inputs(
+    model: onnx.ModelProto,
+    provided: dict[str, np.ndarray],
+    providers: list[str] | None = None,
+) -> dict[str, np.ndarray]:
+    """Add any inputs the ONNX model needs that aren't in *provided* (e.g. KV-cache)."""
+    sess = ort.InferenceSession(
+        model.SerializeToString(),
+        providers=providers or ort.get_available_providers(),
+    )
+    input_ids = provided.get("input_ids")
+    batch_size = int(input_ids.shape[0]) if input_ids is not None else 1
+    seq_len = int(input_ids.shape[1]) if input_ids is not None else 1
+    dim_map: dict[str, int] = {
+        "batch_size": batch_size,
+        "sequence_length": seq_len,
+        "past_sequence_length": 0,
+        "total_sequence_length": seq_len,
+    }
+    result = dict(provided)
+    for inp in sess.get_inputs():
+        if inp.name in result:
+            continue
+        shape = [dim if isinstance(dim, int) else dim_map.get(dim, 0) for dim in inp.shape]
+        np_dtype = _ORT_DTYPE_TO_NUMPY.get(inp.type, np.float32)
+        if inp.name == "attention_mask":
+            result[inp.name] = np.ones(shape, dtype=np_dtype)
+        else:
+            result[inp.name] = np.zeros(shape, dtype=np_dtype)
+    return result
 
 
 def _load_target(

@@ -5,17 +5,32 @@ description = "Add your description here"
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
-authors = [{ name = "sourqe", email = "sourqee@gmail.com" }]
+authors = [{ name = "icnatspell", email = "spellicnat@gmail.com" }]
 requires-python = ">=3.13"
 dependencies = [
     "olive-ai>=0.9",
-    "torch>=2.4",
+    "torch>=2.10",
     "transformers>=4.45",
     "numpy>=2.0",
     "onnx>=1.17",
-    "onnxruntime>=1.20",
     # olive-ai 0.12.1 imports `requests` unconditionally without declaring it.
     "requests>=2.31",
+    "lm-eval>=0.4.12",
+    "onnxruntime-gpu>=1.26.0",
+    "onnxruntime-genai-cuda>=0.13.2",
+]
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+torchvision = [
+    { index = "pytorch-cu128", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [project.scripts]
@@ -42,13 +57,27 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "COM812",  # conflicts with the formatter
-    "D203",    # incompatible with D211 (no-blank-line-before-class) — we use D211
-    "D213",    # incompatible with D212 (multi-line-summary-first-line) — we use D212
+    "COM812", # conflicts with the formatter
+    "D203",   # incompatible with D211 (no-blank-line-before-class)
+    "D213",   # incompatible with D212 (multi-line-summary-first-line)
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = ["S101", "D100", "D101", "D102", "D103", "D104", "D107", "ANN001", "ANN201", "ANN202", "ANN204", "INP001", "PLR2004"]
+"tests/**" = [
+    "S101",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D107",
+    "ANN001",
+    "ANN201",
+    "ANN202",
+    "ANN204",
+    "INP001",
+    "PLR2004",
+]
 
 [tool.pyrefly]
 project-includes = ["src", "tests"]
@@ -57,6 +86,9 @@ python-version = "3.13.0"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra --strict-markers --strict-config"
+markers = [
+    "integration: tests that download models and require network access (deselect with -m 'not integration')",
+]
 
 [tool.coverage.run]
 source = ["src"]

@@ -1,0 +1,80 @@
+input_model:
+  type: HfModel
+  model_path: HuggingFaceTB/SmolLM2-135M-Instruct
+
+systems:
+  local_system:
+    type: LocalSystem
+    accelerators:
+      - execution_providers:
+          - CUDAExecutionProvider
+
+evaluators:
+  lm_evaluator:
+    type: LMEvaluator
+    tasks:
+      - arc_easy
+      - hellaswag
+    device: cpu
+    rolling_window_size: 512
+    batch_size: 4
+
+  degradation:
+    type: olmpress_degradation
+    reference_model:
+      type: HfModel
+      config:
+        model_path: HuggingFaceTB/SmolLM2-135M-Instruct
+    inputs:
+      input_ids:
+        shape: [1, 64]
+        dtype: long
+        low: 0
+        high: 49152
+        seed: 0
+    view: linears
+    # ONNX models expose logits as "logits", not the PyTorch module name "lm_head"
+    logits_layer: logits
+    temperature: 1.0
+    cross_framework_precision: fp32
+    cross_framework_cache_dir: cache/degradation_ref_fp32
+    metrics:
+      - name: deg
+        type: custom
+        sub_types:
+          - name: sqnr_mean
+            priority: 1
+            higher_is_better: true
+          - name: sqnr_min
+            priority: 2
+            higher_is_better: true
+          - name: cosine_mean
+            priority: 3
+            higher_is_better: true
+          - name: relative_l2_max
+            priority: 4
+            higher_is_better: false
+          - name: kl
+            priority: 5
+            higher_is_better: false
+
+passes:
+  onnx_conversion:
+    type: ModelBuilder
+    config:
+      precision: int4
+      int4_accuracy_level: 4
+      int4_block_size: 32
+      int4_algo_config: default
+      exclude_lm_head: false
+
+engine:
+  evaluate_input_model: false
+  host: local_system
+  target: local_system
+  evaluator: degradation
+  cache_dir: cache
+  clean_cache: false
+  output_dir: workflows/smollm2-135m-instruct/outputs/mb[w-int4,a-int8,gs32]
+  log_severity_level: 1
+  no_artifacts: true
