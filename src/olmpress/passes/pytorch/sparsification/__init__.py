@@ -1,4 +1,4 @@
-"""Custom Olive optimization passes."""
+"""Sparsification passes (pruning, etc.) for PyTorch models."""
 
 from olmpress.passes.pytorch.sparsification.structured_pruning import TorchPruningPass, prune_model
 

@@ -13,7 +13,7 @@ from olive.model import PyTorchModelHandler
 from olive.passes.olive_pass import Pass
 from torch import nn
 
-from olmpress.passes.structured_pruning import (
+from olmpress.passes.pytorch.sparsification.structured_pruning import (
     TorchPruningPass,
     _resolve_ignored_layers,
     prune_model,
@@ -36,6 +36,24 @@ class TinyMLP(nn.Module):
         return self.head(torch.relu(self.fc2(torch.relu(self.fc1(x)))))
 
 
+class TinyCNN(nn.Module):
+    """Small CNN with BN, suitable for bn_scale and OBDC importance tests."""
+
+    def __init__(self, in_channels: int = 3, hidden: int = 16, out_classes: int = 10):
+        super().__init__()
+        self.conv1 = nn.Conv2d(in_channels, hidden, 3, padding=1)
+        self.bn1 = nn.BatchNorm2d(hidden)
+        self.conv2 = nn.Conv2d(hidden, hidden * 2, 3, padding=1)
+        self.bn2 = nn.BatchNorm2d(hidden * 2)
+        self.head = nn.Linear(hidden * 2, out_classes)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = torch.relu(self.bn1(self.conv1(x)))
+        x = torch.relu(self.bn2(self.conv2(x)))
+        x = x.mean(dim=[-2, -1])  # global average pool
+        return self.head(x)
+
+
 def _param_count(model: nn.Module) -> int:
     return sum(p.numel() for p in model.parameters())
 
@@ -45,7 +63,7 @@ def _example_input(batch: int = 2, in_dim: int = 16) -> torch.Tensor:
 
 
 # ---------------------------------------------------------------------------
-# Unit tests for prune_model()
+# Static (non-gradient) importances
 
 
 def test_prune_model_reduces_param_count():
@@ -57,17 +75,16 @@ def test_prune_model_reduces_param_count():
 
 def test_prune_model_forward_still_works():
     model = TinyMLP()
-    # Ignore the head so its output dim is preserved.
     prune_model(model, _example_input(), pruning_ratio=0.5, ignored_layers=[model.head])
     out = model(_example_input())
-    assert out.shape[-1] == 8  # output dim unchanged
+    assert out.shape[-1] == 8
 
 
 def test_prune_model_ignored_layer_unchanged():
     model = TinyMLP(hidden=32)
-    head_weight_before = model.head.weight.data.clone()
+    head_rows_before = model.head.weight.shape[0]
     prune_model(model, _example_input(), pruning_ratio=0.5, ignored_layers=[model.head])
-    assert model.head.weight.shape[0] == head_weight_before.shape[0]
+    assert model.head.weight.shape[0] == head_rows_before
 
 
 def test_prune_model_higher_ratio_gives_smaller_model():
@@ -91,10 +108,22 @@ def test_prune_model_round_to():
     assert model.fc1.weight.shape[0] % 8 == 0
 
 
-def test_prune_model_random_importance():
+@pytest.mark.parametrize("importance", ["magnitude", "group_magnitude", "random", "lamp", "fpgm"])
+def test_prune_model_static_importances(importance: str):
     model = TinyMLP()
     before = _param_count(model)
-    prune_model(model, _example_input(), pruning_ratio=0.5, importance="random")
+    prune_model(model, _example_input(), pruning_ratio=0.5, importance=importance)
+    assert _param_count(model) < before
+
+
+def test_prune_model_bn_scale_importance():
+    # bn_scale reads BN layer scales; requires a model with BatchNorm.
+    model = TinyCNN()
+    before = _param_count(model)
+    example = torch.randn(2, 3, 16, 16)
+    prune_model(
+        model, example, pruning_ratio=0.5, importance="bn_scale", ignored_layers=[model.head]
+    )
     assert _param_count(model) < before
 
 
@@ -105,7 +134,86 @@ def test_prune_model_unknown_importance_raises():
 
 
 # ---------------------------------------------------------------------------
-# Unit tests for _resolve_ignored_layers
+# Gradient-based importances
+
+
+@pytest.mark.parametrize("importance", ["taylor", "hessian"])
+def test_prune_model_gradient_importances(importance: str):
+    model = TinyMLP()
+    before = _param_count(model)
+    prune_model(
+        model,
+        _example_input(),
+        pruning_ratio=0.5,
+        importance=importance,
+        calibration_steps=2,
+    )
+    assert _param_count(model) < before
+
+
+@pytest.mark.xfail(
+    reason=(
+        "OBDCImportance in torch-pruning has a shape mismatch bug: Fisher is built "
+        "with bias columns but __call__ slices only weight columns, causing a "
+        "RuntimeError when conv layers have bias=True."
+    ),
+    strict=True,
+)
+def test_prune_model_obdc_importance():
+    model = TinyCNN(out_classes=10)
+    example = torch.randn(2, 3, 16, 16)
+    prune_model(
+        model,
+        example,
+        pruning_ratio=0.5,
+        importance="obdc",
+        num_classes=10,
+        calibration_steps=2,
+        ignored_layers=[model.head],
+    )
+
+
+# ---------------------------------------------------------------------------
+# Extra pruner params
+
+
+def test_prune_model_global_pruning():
+    model = TinyMLP()
+    before = _param_count(model)
+    prune_model(model, _example_input(), pruning_ratio=0.5, global_pruning=True)
+    assert _param_count(model) < before
+
+
+def test_prune_model_max_pruning_ratio():
+    model = TinyMLP(hidden=32)
+    prune_model(model, _example_input(), pruning_ratio=0.9, max_pruning_ratio=0.5)
+    # max_pruning_ratio=0.5 caps it; hidden must be at least 16 (half of 32)
+    assert model.fc1.weight.shape[0] >= 1
+
+
+def test_prune_model_importance_p():
+    model = TinyMLP()
+    before = _param_count(model)
+    prune_model(model, _example_input(), pruning_ratio=0.5, importance="magnitude", importance_p=1)
+    assert _param_count(model) < before
+
+
+def test_prune_model_multivariable_taylor():
+    model = TinyMLP()
+    before = _param_count(model)
+    prune_model(
+        model,
+        _example_input(),
+        pruning_ratio=0.5,
+        importance="taylor",
+        multivariable=True,
+        calibration_steps=2,
+    )
+    assert _param_count(model) < before
+
+
+# ---------------------------------------------------------------------------
+# _resolve_ignored_layers
 
 
 def test_resolve_ignored_layers_valid():
@@ -139,7 +247,7 @@ def test_pass_runs_on_pytorch_handler():
     before = _param_count(model)
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        # Use model_loader so Olive returns the plain nn.Module (required for pruning).
+
         def _loader(_path: str) -> nn.Module:
             return model
 

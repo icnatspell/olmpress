@@ -19,6 +19,7 @@ dependencies = [
     "onnxruntime-gpu>=1.26.0",
     "onnxruntime-genai-cuda>=0.13.2",
     "torch-pruning>=1.6.1",
+    "torchvision>=0.26.0",
 ]
 
 [[tool.uv.index]]
@@ -64,6 +65,15 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"examples/**" = [
+    "INP001",
+    "T201",
+    "D103",
+    "D100",
+    "ANN001",
+    "ANN201",
+    "ANN202",
+]
 "tests/**" = [
     "S101",
     "D100",
