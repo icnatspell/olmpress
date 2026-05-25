@@ -26,7 +26,7 @@ class _LogitsWrapper(nn.Module):
 
     def __init__(self) -> None:
         super().__init__()
-        from transformers import AutoModelForImageClassification  # noqa: PLC0415
+        from transformers import AutoModelForImageClassification
 
         self._model = AutoModelForImageClassification.from_pretrained(MODEL_ID)
 
