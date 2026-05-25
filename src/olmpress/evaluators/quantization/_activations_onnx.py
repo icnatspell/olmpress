@@ -61,7 +61,7 @@ def capture_onnx(
         raise KeyError(msg)
 
     augmented = _expose_outputs(model, requested)
-    session_providers = providers if providers is not None else ort.get_available_providers()
+    session_providers = providers if providers is not None else ["CPUExecutionProvider"]
     session = ort.InferenceSession(
         augmented.SerializeToString(),
         providers=session_providers,
