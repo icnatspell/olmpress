@@ -113,7 +113,10 @@ def _accumulate_gradients(
                 else model(example_inputs)
             )
             if isinstance(out, dict):
-                loss = sum(v.float().sum() for v in out.values() if isinstance(v, torch.Tensor))
+                loss = sum(
+                    (v.float().sum() for v in out.values() if isinstance(v, torch.Tensor)),
+                    torch.tensor(0.0),
+                )
             elif isinstance(out, (tuple, list)):
                 loss = out[0].float().sum()
             else:
