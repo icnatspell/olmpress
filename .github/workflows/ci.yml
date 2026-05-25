@@ -10,29 +10,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check:
+  lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v4
+      - uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
+      - run: uv python install
+      - run: uv sync
+      - run: uv run ruff check .
+      - run: uv run ruff format --check .
 
-      - name: Set up Python
-        run: uv python install
+  typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync
+      - run: uv run pyrefly check
 
-      - name: Install dependencies
-        run: uv sync
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync
+      - run: uv run pytest -m "not integration" --cov --cov-report=term-missing
 
-      - name: Lint
-        run: |
-          uv run ruff check .
-          uv run ruff format --check .
-
-      - name: Type check
-        run: uv run pyrefly check
-
-      - name: Tests with coverage
-        run: uv run pytest --cov --cov-report=term-missing
+  integration-tests:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+      - run: uv python install
+      - run: uv sync
+      - run: uv run pytest -m integration
