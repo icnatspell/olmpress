@@ -5,37 +5,28 @@ default:
 install:
     uv sync
 
-# Run lint, typecheck, and tests
-check: lint typecheck test
+# Run lint and tests
+check: lint test
 
-# Lint and check formatting
+# Lint, check formatting, and type-check
 lint:
     uv run ruff check .
     uv run ruff format --check .
+    uv run pyrefly check
 
-# Auto-fix lint and apply formatting
+# Auto-fix lint and apply formatting, then type-check
 fix:
     uv run ruff check --fix .
     uv run ruff format .
-
-# Type-check with pyrefly
-typecheck:
     uv run pyrefly check
 
-# Run tests
-test:
-    uv run pytest
-
 # Run tests with coverage report
-cov:
+test:
     uv run pytest --cov --cov-report=term-missing
 
-# Install pre-commit hooks (requires prek installed)
-hooks-install:
+# Install pre-commit hooks and run them on all files
+hooks:
     prek install
-
-# Run pre-commit hooks on all files
-hooks-run:
     prek run --all-files
 
 # Build sdist and wheel
