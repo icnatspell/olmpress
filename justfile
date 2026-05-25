@@ -5,17 +5,8 @@ default:
 install:
     uv sync
 
-# Run lint and tests
-check: lint test
-
-# Lint, check formatting, and type-check
-lint:
-    uv run ruff check .
-    uv run ruff format --check .
-    uv run pyrefly check
-
-# Auto-fix lint and apply formatting, then type-check
-fix:
+# Run linting, formatting, and static type checking
+check:
     uv run ruff check --fix .
     uv run ruff format .
     uv run pyrefly check
