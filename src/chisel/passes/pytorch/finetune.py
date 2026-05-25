@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import atexit
+import os
 from collections.abc import Callable
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -24,15 +26,19 @@ class FineTunePass(Pass):
 
     The user provides a Python script with a function of the form::
 
-        def finetune(model: torch.nn.Module, config: dict) -> torch.nn.Module:
+        def finetune(model: torch.jit.ScriptModule, config: dict) -> torch.jit.ScriptModule:
             ...
 
-    ``model`` is the loaded PyTorch model (e.g. a TorchScript ``ScriptModule``).
-    ``config`` is the ``finetune_config`` dict from the workflow YAML, passed through
-    verbatim so the user controls all hyperparameters.  The function must return the
-    fine-tuned model in the same scriptable form it received.
+    ``model`` is the loaded TorchScript module produced by an upstream pass (e.g.
+    ``TorchPruningPass``).  ``config`` is the ``finetune_config`` dict from the
+    workflow YAML, passed through verbatim so the user controls all
+    hyperparameters.  The function must return a ``torch.jit.ScriptModule`` so the
+    pass can save it for the next stage of the pipeline.
 
-    The pass then saves the returned model and hands it to the next Olive pass.
+    The pass registers ``atexit(os._exit(0))`` before invoking the user function.
+    This bypasses Python's normal shutdown cleanup, which can hang indefinitely
+    on open HTTP connections from HuggingFace streaming datasets — a common
+    pattern inside user fine-tuning scripts.
     """
 
     @classmethod
@@ -71,9 +77,20 @@ class FineTunePass(Pass):
             msg = f"FineTunePass only supports PyTorchModelHandler, got {type(model).__name__}"
             raise TypeError(msg)
 
+        # See class docstring: prevents shutdown hangs on HuggingFace streaming datasets.
+        atexit.register(os._exit, 0)
+
         fn = self._user_module_loader.load_object(config.finetune_fn)
         pt_model = model.load_model()
         fine_tuned = fn(pt_model, config.finetune_config or {})
+
+        if not isinstance(fine_tuned, torch.jit.ScriptModule):
+            msg = (
+                f"finetune_fn must return a torch.jit.ScriptModule, got "
+                f"{type(fine_tuned).__name__}. The input model is a TorchScript module — "
+                "keep it scripted throughout training (e.g., don't unwrap it)."
+            )
+            raise TypeError(msg)
 
         out_path = Path(output_model_path).with_suffix(".pt")
         out_path.parent.mkdir(parents=True, exist_ok=True)

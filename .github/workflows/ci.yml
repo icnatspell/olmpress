@@ -17,9 +17,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
+      - uses: ./.github/actions/setup
         with:
-          enable-cache: true
+          sync: 'false'
       - run: uvx ruff check .
       - run: uvx ruff format --check .
 
@@ -27,22 +27,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-      - run: uv python install
-      - run: uv sync
+      - uses: ./.github/actions/setup
       - run: uv run pyrefly check
 
   unit-tests:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-      - run: uv python install
-      - run: uv sync
+      - uses: ./.github/actions/setup
       - run: uv run pytest -m "not integration" --cov --cov-report=term-missing
 
   integration-tests:
@@ -50,9 +42,5 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v4
-        with:
-          enable-cache: true
-      - run: uv python install
-      - run: uv sync
+      - uses: ./.github/actions/setup
       - run: uv run pytest -m integration

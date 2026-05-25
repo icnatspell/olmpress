@@ -17,8 +17,6 @@ config keys (all optional):
 
 from __future__ import annotations
 
-import atexit
-import os
 import time
 from typing import TYPE_CHECKING
 
@@ -67,9 +65,6 @@ def finetune(model: torch.nn.Module, config: dict) -> torch.nn.Module:
     Called by FineTunePass with the loaded model and the finetune_config dict
     from the workflow YAML.  Returns the fine-tuned model.
     """
-    # bypass HuggingFace streaming GC cleanup which hangs on open HTTP connections
-    atexit.register(os._exit, 0)
-
     train_samples = config.get("train_samples", 5000)
     epochs = config.get("epochs", 5)
     batch_size = config.get("batch_size", 32)

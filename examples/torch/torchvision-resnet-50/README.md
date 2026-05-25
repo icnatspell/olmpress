@@ -21,7 +21,7 @@ https://huggingface.co/datasets/ILSVRC/imagenet-1k).
 ## Run
 
 ```bash
-uv run chisel run --config examples/torch/torchvision-resnet-50/workflow.yaml
+uv run chisel run examples/torch/torchvision-resnet-50/workflow.yaml
 ```
 
 This runs the full pipeline in one shot:
@@ -33,15 +33,31 @@ This runs the full pipeline in one shot:
 Output model and metrics are written to
 `examples/torch/torchvision-resnet-50/outputs/lamp_0.10_kd/`.
 
-## Expected results
+## Comparison study
 
-Measured on 200 ImageNet-1k validation samples.
+To compare four variants side-by-side (unpruned, pruned-only, pruned + plain CE
+fine-tune, pruned + KD fine-tune), run the ablation script:
 
-| Model | top-1 |
-|-------|-------|
-| Baseline (torchvision ResNet50 IMAGENET1K_V2) | ~80% |
-| LAMP 10% pruning — one-shot | ~43–45% |
-| KD fine-tuning (5 epochs, 5k samples) | ~62–67% |
+```bash
+uv run python examples/torch/torchvision-resnet-50/compare.py
+```
+
+It mutates `workflow.yaml` in memory for each variant and prints a results table.
+Fine-tuning is capped to 1 epoch for speed — edit the constant near the top of
+`compare.py` for higher-quality numbers.
+
+### Results (1 epoch, 5k train samples, 200 val samples)
+
+| Model                            |   acc@1 |       #params |
+|----------------------------------|---------|---------------|
+| Unpruned baseline                |  81.00% |    25,557,032 |
+| Pruned (no fine-tune)            |  44.50% |    20,235,006 |
+| Pruned + plain CE fine-tune      |  60.50% |    20,235,006 |
+| Pruned + KD fine-tune            |  58.50% |    20,235,006 |
+
+10% LAMP pruning removes ~21% of parameters. A single epoch of fine-tuning
+recovers most of the lost accuracy; KD typically pulls ahead of plain CE with
+more epochs.
 
 ## File layout
 
@@ -51,5 +67,6 @@ examples/torch/torchvision-resnet-50/
 ├── workflow.yaml           # Olive workflow: prune → fine-tune → evaluate
 ├── load_model.py           # model script (loads torchvision ResNet50)
 ├── finetune_script.py      # user script for FineTunePass (KD fine-tuning)
-└── eval_data_script.py     # user script for Olive evaluator (ImageNet val)
+├── eval_data_script.py     # user script for Olive evaluator (ImageNet val)
+└── compare.py              # ablation: unpruned vs. pruned vs. fine-tuned
 ```

@@ -22,9 +22,13 @@ Longer term, `chisel` aims to support export to edge runtimes such as ONNX and E
 
 ## Installation
 
+`chisel` is not yet published on PyPI. Install the latest from source:
+
 ```bash
-uv add chisel
+uv add git+https://github.com/icnatspell/chisel
 ```
+
+Or clone and `uv sync` (see [Development](#development) below).
 
 ## Usage
 

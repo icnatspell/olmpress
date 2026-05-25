@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 import torch
 from olive.model import HfModelHandler, PyTorchModelHandler
 from olive.passes import Pass
-from olive.passes.pass_config import BasePassConfig, PassConfigParam
+from olive.passes.pass_config import PassConfigParam
 
 from chisel.passes.pytorch.structured_pruning.utils import prune_model, resolve_ignored_layers
 
@@ -115,7 +115,7 @@ class TorchPruningPass(Pass):
     def _run_for_config(
         self,
         model: Any,
-        config: type[BasePassConfig],
+        config: Any,
         output_model_path: str,
     ) -> Any:
         if isinstance(model, HfModelHandler):

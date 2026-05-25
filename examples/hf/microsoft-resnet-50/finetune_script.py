@@ -13,8 +13,6 @@ config keys (all optional):
 
 from __future__ import annotations
 
-import atexit
-import os
 import time
 from typing import TYPE_CHECKING
 
@@ -59,8 +57,6 @@ class _StreamingSubset(IterableDataset):
 
 def finetune(model: torch.nn.Module, config: dict) -> torch.nn.Module:
     """Fine-tune a pruned TorchScript ResNet50 (HF path)."""
-    atexit.register(os._exit, 0)
-
     train_samples = config.get("train_samples", 5000)
     epochs = config.get("epochs", 5)
     batch_size = config.get("batch_size", 32)

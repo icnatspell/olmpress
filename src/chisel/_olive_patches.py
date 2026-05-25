@@ -1,4 +1,13 @@
-"""Runtime patches for Olive bugs."""
+"""Runtime patches for known olive-ai bugs.
+
+Each patch documents:
+  - which olive-ai versions are affected
+  - what the upstream bug is
+  - the upstream issue/PR (if filed) so we can remove the patch once fixed
+
+When bumping the ``olive-ai`` floor in ``pyproject.toml`` past an affected range,
+delete the corresponding patch here.
+"""
 
 from __future__ import annotations
 
@@ -10,8 +19,17 @@ def apply() -> None:
 
 
 def _patch_metric_serialize_backend() -> None:
-    # Olive bug: Metric.serialize_backend does not guard against None,
-    # but validate_backend always sets backend=None for MetricType.CUSTOM.
+    """Fix Metric.serialize_backend for MetricType.CUSTOM (backend=None).
+
+    Affected versions: olive-ai 0.12.x (current floor).
+    Bug: ``Metric.serialize_backend`` unconditionally calls ``backend.model_dump()``,
+    but ``validate_backend`` always sets ``backend=None`` for ``MetricType.CUSTOM``.
+    Upstream: not yet filed — TODO file at microsoft/Olive.
+
+    We replace the function code via ``__code__`` swap because Pydantic has already
+    captured the serializer at class-creation time, so reassigning ``.func`` has no
+    effect on the bound descriptor.
+    """
     from olive.evaluator.metric import Metric
 
     original_func = Metric.__pydantic_decorators__.field_serializers["serialize_backend"].func
@@ -25,8 +43,14 @@ def _patch_metric_serialize_backend() -> None:
 
 
 def _patch_sub_metric_serialize_metric_config() -> None:
-    # Olive bug: SubMetric.serialize_metric_config does not guard against None,
-    # but metric_config is Optional and can be None for custom sub-types.
+    """Fix SubMetric.serialize_metric_config when metric_config is None.
+
+    Affected versions: olive-ai 0.12.x (current floor).
+    Bug: ``SubMetric.serialize_metric_config`` unconditionally calls
+    ``metric_config.model_dump()``, but ``metric_config`` is ``Optional`` and is
+    ``None`` for custom sub-types.
+    Upstream: not yet filed — TODO file at microsoft/Olive.
+    """
     from olive.evaluator.metric import SubMetric
 
     original_func = SubMetric.__pydantic_decorators__.field_serializers[
