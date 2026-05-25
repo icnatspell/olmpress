@@ -1,12 +1,13 @@
-# Structured pruning via olmpress + Olive — HuggingFace model path.
+# Structured pruning via olmpress + Olive — PyTorchModel path.
 #
 # Run from the project root:
-#   uv run olmpress run --config examples/microsoft--resnet-50/hf/workflow.yaml
+#   uv run olmpress run --config examples/torch/torchvision-resnet-50/workflow.yaml
 
 input_model:
-  type: HfModel
-  model_path: microsoft/resnet-50
-  task: image-classification
+  type: PyTorchModel
+  model_script: examples/torch/torchvision-resnet-50/load_model.py
+  model_loader: load_model
+  dummy_inputs_func: get_dummy_inputs
 
 systems:
   local_system:
@@ -22,12 +23,12 @@ passes:
       pruning_ratio: 0.10
       importance: lamp
       global_pruning: true
-      ignored_layers: ["classifier.1"]
+      ignored_layers: []
 
 engine:
   host: local_system
   target: local_system
   cache_dir: cache
   clean_cache: true
-  output_dir: examples/microsoft--resnet-50/hf/outputs/lamp_0.10
+  output_dir: examples/torch/torchvision-resnet-50/outputs/lamp_0.10
   log_severity_level: 1

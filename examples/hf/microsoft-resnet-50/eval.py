@@ -1,9 +1,14 @@
 """Evaluate microsoft/resnet-50 (baseline or pruned) on ILSVRC/imagenet-1k.
 
+Preprocessing uses AutoImageProcessor from the HuggingFace Hub model card,
+matching exactly what the model was trained with.
+
+Reports acc@1 (via evaluate library).
+
 Usage:
-    uv run python examples/microsoft--resnet-50/eval_accuracy.py
-    uv run python examples/microsoft--resnet-50/eval_accuracy.py --num-samples 200
-    uv run python examples/microsoft--resnet-50/eval_accuracy.py --model path/to/pruned.pt
+    uv run python examples/hf/microsoft-resnet-50/eval.py
+    uv run python examples/hf/microsoft-resnet-50/eval.py --num-samples 200
+    uv run python examples/hf/microsoft-resnet-50/eval.py --model outputs/lamp_0.10/model/model.pt
 """
 
 from __future__ import annotations
@@ -42,10 +47,12 @@ def main() -> None:
     ds = load_dataset("ILSVRC/imagenet-1k", split="validation", streaming=True)
     processor = AutoImageProcessor.from_pretrained(MODEL_ID)
 
-    all_preds, all_refs = [], []
+    all_preds: list[int] = []
+    all_refs: list[int] = []
 
     if args.model:
         model = torch.jit.load(args.model).eval().to(device)
+        n_params = sum(p.numel() for p in model.parameters())
         for imgs, labels in _iter_batches(ds, args.batch_size, args.num_samples):
             pv = processor(images=imgs, return_tensors="pt")["pixel_values"].to(device)
             with torch.no_grad():
@@ -53,17 +60,19 @@ def main() -> None:
             all_refs += labels
     else:
         pipe = pipeline("image-classification", model=MODEL_ID, device=device)
+        n_params = sum(p.numel() for p in pipe.model.parameters())
         label2id: dict[str, int] = pipe.model.config.label2id
         for imgs, labels in _iter_batches(ds, args.batch_size, args.num_samples):
             results = pipe(imgs)
             all_preds += [label2id[r[0]["label"]] for r in results]
             all_refs += labels
 
-    top1 = _evaluate.load("accuracy").compute(predictions=all_preds, references=all_refs)[
+    acc1 = _evaluate.load("accuracy").compute(predictions=all_preds, references=all_refs)[
         "accuracy"
     ]
-    print(f"top-1 accuracy: {top1 * 100:.2f}%")
-    print(f"top1={top1:.4f}", flush=True)
+    print(f"top-1 accuracy: {acc1 * 100:.2f}%", flush=True)
+    print(f"top1={acc1:.4f}", flush=True)
+    print(f"params={n_params}", flush=True)
 
     os._exit(0)  # bypass datasets streaming GC cleanup which hangs on open HTTP connections
 

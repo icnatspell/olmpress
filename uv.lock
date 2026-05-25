@@ -1386,6 +1386,17 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
+lint = [
+    { name = "ruff" },
+]
+test = [
+    { name = "prek" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
+typecheck = [
+    { name = "pyrefly" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1413,6 +1424,13 @@ dev = [
     { name = "pytest-cov", specifier = ">=5" },
     { name = "ruff", specifier = ">=0.8" },
 ]
+lint = [{ name = "ruff", specifier = ">=0.8" }]
+test = [
+    { name = "prek", specifier = ">=0.4.1" },
+    { name = "pytest", specifier = ">=8" },
+    { name = "pytest-cov", specifier = ">=5" },
+]
+typecheck = [{ name = "pyrefly", specifier = ">=0.16" }]
 
 [[package]]
 name = "onnx"
