@@ -88,9 +88,6 @@ def _kd_finetune(cfg: dict) -> None:
 
 def main() -> None:
     base = yaml.safe_load(WORKFLOW_PATH.read_text())
-    # Cap fine-tuning at 1 epoch so the ablation fits in ~10 minutes on a single GPU.
-    # Edit this constant for higher-quality numbers (workflow.yaml defaults to 5 epochs).
-    base["passes"]["finetuning"]["config"]["finetune_config"]["epochs"] = 1
     results: list[tuple[str, float, int]] = []
 
     print("=" * 60, flush=True)
