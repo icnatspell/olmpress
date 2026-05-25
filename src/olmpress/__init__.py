@@ -9,8 +9,8 @@ _apply_olive_patches()
 
 def main() -> None:
     """Entry point for the ``olmpress`` CLI."""
-    import sys  # noqa: PLC0415
-    from argparse import ArgumentParser  # noqa: PLC0415
+    import sys
+    from argparse import ArgumentParser
 
     parser = ArgumentParser(
         prog="olmpress",
@@ -26,8 +26,8 @@ def main() -> None:
     if args.command == "run":
         # olmpress is already imported at this point, so all @Registry.register
         # decorators have fired and olmpress_degradation is visible to Olive.
-        from olive.package_config import OlivePackageConfig  # noqa: PLC0415
-        from olive.workflows import run as olive_run  # noqa: PLC0415
+        from olive.package_config import OlivePackageConfig
+        from olive.workflows import run as olive_run
 
         pkg = OlivePackageConfig.load_default_config().model_dump()
         pkg["passes"]["TorchPruningPass"] = {

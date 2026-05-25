@@ -142,7 +142,7 @@ class QuantErrorEvaluator(OliveEvaluator):
         cpu_captures: bool = False,
         cross_framework_precision: str = "fp32",
         cross_framework_cache_dir: str | None = None,
-        **kwargs: Any,  # noqa: ANN401
+        **kwargs: Any,
     ) -> None:
         """Configure the evaluator from callable loaders or JSON-shaped specs."""
         super().__init__(**kwargs)
@@ -230,7 +230,7 @@ class QuantErrorEvaluator(OliveEvaluator):
         self,
         target: onnx.ModelProto,
         inputs: dict[str, Any],
-        execution_providers: str | list[str] | None,  # noqa: ARG002
+        execution_providers: str | list[str] | None,
     ) -> tuple[dict[str, np.ndarray], dict[str, np.ndarray], dict[str, str]]:
         onnx_reference = self._get_onnx_reference()
         # Force CPU: avoids CUDA-specific dtype requirements on GQA ops.
@@ -272,15 +272,15 @@ class QuantErrorEvaluator(OliveEvaluator):
             )
             raise RuntimeError(msg)
 
-        import tempfile  # noqa: PLC0415
+        import tempfile
 
-        from olive.hardware.accelerator import (  # noqa: PLC0415
+        from olive.hardware.accelerator import (
             AcceleratorSpec,
             Device,
             ExecutionProvider,
         )
-        from olive.model import ModelConfig  # noqa: PLC0415
-        from olive.passes.onnx.model_builder import ModelBuilder  # noqa: PLC0415
+        from olive.model import ModelConfig
+        from olive.passes.onnx.model_builder import ModelBuilder
 
         cache_dir = self._cross_framework_cache_dir or tempfile.mkdtemp(prefix="olmpress_ref_")
         input_handler = ModelConfig.model_validate(
@@ -520,7 +520,7 @@ def _coerce_model_loader(
     if spec is None or callable(spec):
         return spec  # type: ignore[return-value]
     if isinstance(spec, dict):
-        from olive.model import ModelConfig  # noqa: PLC0415
+        from olive.model import ModelConfig
 
         config = ModelConfig.model_validate(spec)
 

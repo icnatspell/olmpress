@@ -60,21 +60,20 @@ src = ["src", "tests"]
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
-    "COM812", # conflicts with the formatter
-    "D203",   # incompatible with D211 (no-blank-line-before-class)
-    "D213",   # incompatible with D212 (multi-line-summary-first-line)
+    "COM812",  # conflicts with the formatter
+    "D203",    # incompatible with D211 (no-blank-line-before-class)
+    "D213",    # incompatible with D212 (multi-line-summary-first-line)
+    "PLC0415", # imports not at top — used for legitimate lazy/deferred imports throughout
+    "ANN401",  # Any type — necessary at Olive API boundaries where parent signatures use Any
+    "ARG001",  # unused method argument — overriding Olive/PyTorch base class signatures
+    "ARG002",  # unused function argument — overriding Olive/PyTorch base class signatures
+    "ARG003",  # unused class method argument — overriding Olive/PyTorch base class signatures
+    "PLR2004", # magic value comparison — small constants (2, 5) are locally obvious
+    "SLF001",  # private member access — intentional access of PyTorch/torch-pruning internals
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"examples/**" = [
-    "INP001",
-    "T201",
-    "D103",
-    "D100",
-    "ANN001",
-    "ANN201",
-    "ANN202",
-]
+"examples/**" = ["INP001", "T201", "D103", "D100", "ANN001", "ANN201", "ANN202"]
 "tests/**" = [
     "S101",
     "D100",
@@ -88,7 +87,7 @@ ignore = [
     "ANN202",
     "ANN204",
     "INP001",
-    "PLR2004",
+    "E731",
 ]
 
 [tool.pyrefly]

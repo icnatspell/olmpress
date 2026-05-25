@@ -28,7 +28,7 @@ class TorchPruningPass(Pass):
     """
 
     @classmethod
-    def _default_config(cls, accelerator_spec: AcceleratorSpec) -> dict[str, PassConfigParam]:  # noqa: ARG003
+    def _default_config(cls, accelerator_spec: AcceleratorSpec) -> dict[str, PassConfigParam]:
         return {
             "pruning_ratio": PassConfigParam(
                 type_=float,
@@ -114,10 +114,10 @@ class TorchPruningPass(Pass):
 
     def _run_for_config(
         self,
-        model: Any,  # noqa: ANN401
+        model: Any,
         config: type[BasePassConfig],
         output_model_path: str,
-    ) -> Any:  # noqa: ANN401
+    ) -> Any:
         if isinstance(model, HfModelHandler):
             return self._run_hf(model, config, output_model_path)
         if isinstance(model, PyTorchModelHandler):
@@ -128,10 +128,10 @@ class TorchPruningPass(Pass):
     def _run_hf(
         self,
         handler: HfModelHandler,
-        config: Any,  # noqa: ANN401
+        config: Any,
         output_model_path: str,
     ) -> PyTorchModelHandler:
-        from olive.constants import ModelFileFormat  # noqa: PLC0415
+        from olive.constants import ModelFileFormat
 
         pt_model = handler.load_model()
         cfg = pt_model.config  # type: ignore[union-attr]
@@ -195,10 +195,10 @@ class TorchPruningPass(Pass):
     def _run_pytorch(
         self,
         handler: PyTorchModelHandler,
-        config: Any,  # noqa: ANN401
+        config: Any,
         output_model_path: str,
     ) -> PyTorchModelHandler:
-        from olive.constants import ModelFileFormat  # noqa: PLC0415
+        from olive.constants import ModelFileFormat
 
         pt_model = handler.load_model()
         raw: Any = handler.get_dummy_inputs()

@@ -56,7 +56,7 @@ def capture_onnx(
     missing = [name for name in requested if name not in producible]
     if missing:
         preview = ", ".join(missing[:5])
-        more = f" (+{len(missing) - 5} more)" if len(missing) > 5 else ""  # noqa: PLR2004
+        more = f" (+{len(missing) - 5} more)" if len(missing) > 5 else ""
         msg = f"capture_onnx: unknown tensor name(s): {preview}{more}"
         raise KeyError(msg)
 

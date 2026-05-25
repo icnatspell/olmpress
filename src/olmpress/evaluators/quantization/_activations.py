@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from torch import Tensor, nn
 
 
-def _first_tensor(output: Any) -> Tensor | None:  # noqa: ANN401
+def _first_tensor(output: Any) -> Tensor | None:
     """Return the first ``Tensor`` reachable in a module's output, or ``None``."""
     if isinstance(output, torch.Tensor):
         return output
@@ -57,7 +57,7 @@ class ActivationCollector:
         return self._captures
 
     def _make_hook(self, name: str) -> Callable[[nn.Module, Any, Any], None]:
-        def hook(_module: nn.Module, _inputs: Any, output: Any) -> None:  # noqa: ANN401
+        def hook(_module: nn.Module, _inputs: Any, output: Any) -> None:
             tensor = _first_tensor(output)
             if tensor is None:
                 return
@@ -74,7 +74,7 @@ class ActivationCollector:
         missing = [n for n in self._names if n not in named]
         if missing:
             preview = ", ".join(missing[:5])
-            more = f" (+{len(missing) - 5} more)" if len(missing) > 5 else ""  # noqa: PLR2004
+            more = f" (+{len(missing) - 5} more)" if len(missing) > 5 else ""
             msg = f"ActivationCollector: unknown module name(s): {preview}{more}"
             raise KeyError(msg)
         self._captures = {}

@@ -124,7 +124,7 @@ def test_more_noise_yields_worse_scores():
     ref, tgt_low = _noised_pair(noise=0.01)
     _, tgt_high = _noised_pair(noise=0.1)
     inputs = _inputs()
-    ev_factory = lambda r: QuantErrorEvaluator(  # noqa: E731
+    ev_factory = lambda r: QuantErrorEvaluator(
         reference_model=lambda: r,
         inputs=lambda: inputs,
     )

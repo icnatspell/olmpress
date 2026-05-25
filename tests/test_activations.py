@@ -109,10 +109,10 @@ def test_dict_output_extracts_tensor():
 def test_hooks_removed_after_context_exit():
     model, _ = _model_and_input()
     layer = model.layers[0]
-    before = len(layer._forward_hooks)  # noqa: SLF001
+    before = len(layer._forward_hooks)
     with capture(model, ["layers.0"]):
         pass
-    assert len(layer._forward_hooks) == before  # noqa: SLF001
+    assert len(layer._forward_hooks) == before
 
 
 def test_same_input_gives_same_captures_for_identical_models():

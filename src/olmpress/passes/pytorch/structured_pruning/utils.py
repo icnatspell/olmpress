@@ -21,8 +21,8 @@ def _build_importance(  # noqa: PLR0911
     group_reduction: str = "mean",
     multivariable: bool = False,
     num_classes: int = 100,
-) -> Any:  # noqa: ANN401
-    import torch_pruning as tp  # noqa: PLC0415
+) -> Any:
+    import torch_pruning as tp
 
     if name == "magnitude":
         return tp.importance.MagnitudeImportance(p=p, group_reduction=group_reduction)
@@ -61,14 +61,14 @@ def _build_importance(  # noqa: PLR0911
     raise ValueError(msg)
 
 
-def _obdc_prepare_model(importance: Any, pruner: Any) -> None:  # noqa: ANN401
+def _obdc_prepare_model(importance: Any, pruner: Any) -> None:
     """Register OBDC forward/backward hooks for Fisher accumulation.
 
     Reimplements OBDCImportance._prepare_model without the
     _downstream_node_as_root_if_attention call, which returns None for all
     groups in models without attention layers and causes a TypeError crash.
     """
-    from torch_pruning.pruner import function  # noqa: PLC0415
+    from torch_pruning.pruner import function
 
     for group in pruner.DG.get_all_groups(
         ignored_layers=pruner.ignored_layers,
@@ -86,15 +86,15 @@ def _obdc_prepare_model(importance: Any, pruner: Any) -> None:  # noqa: ANN401
                 and layer not in importance.modules
             ):
                 importance.modules.append(layer)
-                layer.register_forward_pre_hook(importance._save_input)  # noqa: SLF001
-                layer.register_backward_hook(importance._save_grad_output)  # noqa: SLF001
+                layer.register_forward_pre_hook(importance._save_input)
+                layer.register_backward_hook(importance._save_grad_output)
 
 
 def _accumulate_gradients(
     model: nn.Module,
     example_inputs: torch.Tensor,
-    importance: Any,  # noqa: ANN401
-    pruner: Any,  # noqa: ANN401
+    importance: Any,
+    pruner: Any,
     steps: int,
 ) -> None:
     """Run synthetic forward/backward passes to seed gradient-based importances."""
@@ -194,10 +194,10 @@ def prune_model(  # noqa: PLR0913
     multivariable: bool = False,
     num_classes: int = 100,
     calibration_steps: int = 10,
-    output_transform: Any = None,  # noqa: ANN401
+    output_transform: Any = None,
 ) -> nn.Module:
     """Apply structured channel pruning to *model* in-place and return it."""
-    import torch_pruning as tp  # noqa: PLC0415
+    import torch_pruning as tp
 
     imp = _build_importance(
         importance,

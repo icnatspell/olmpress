@@ -92,7 +92,7 @@ def _is_weight_bearing(module: nn.Module) -> bool:
 
 def _is_block(name: str) -> bool:
     parts = name.split(".")
-    if len(parts) < 2:  # noqa: PLR2004
+    if len(parts) < 2:
         return False
     return parts[-2] in ("layers", "h") and parts[-1].isdigit()
 
