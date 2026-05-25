@@ -10,7 +10,7 @@ from olive.model import HfModelHandler, PyTorchModelHandler
 from olive.passes import Pass
 from olive.passes.pass_config import BasePassConfig, PassConfigParam
 
-from olmpress.passes.pytorch.structured_pruning.utils import prune_model, resolve_ignored_layers
+from chisel.passes.pytorch.structured_pruning.utils import prune_model, resolve_ignored_layers
 
 if TYPE_CHECKING:
     from olive.hardware.accelerator import AcceleratorSpec

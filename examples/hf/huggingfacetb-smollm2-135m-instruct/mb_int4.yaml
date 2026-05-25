@@ -20,7 +20,7 @@ evaluators:
     batch_size: 4
 
   degradation:
-    type: olmpress_quant_error
+    type: chisel_quant_error
     reference_model:
       type: HfModel
       config:

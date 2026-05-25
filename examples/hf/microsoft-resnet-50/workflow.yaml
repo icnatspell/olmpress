@@ -1,7 +1,7 @@
-# Structured pruning via olmpress + Olive — HfModel path.
+# Structured pruning via chisel + Olive — HfModel path.
 #
 # Run from the project root:
-#   uv run olmpress run --config examples/hf/microsoft-resnet-50/workflow.yaml
+#   uv run chisel run --config examples/hf/microsoft-resnet-50/workflow.yaml
 
 input_model:
   type: HfModel

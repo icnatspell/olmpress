@@ -23,7 +23,7 @@ from olive.model.handler.pytorch import PyTorchModelHandler
 from onnx import TensorProto, helper, numpy_helper
 from torch import nn
 
-from olmpress.evaluators.quantization.evaluator import QuantErrorEvaluator, make_inputs_loader
+from chisel.evaluators.quantization.evaluator import QuantErrorEvaluator, make_inputs_loader
 
 if TYPE_CHECKING:
     from olive.evaluator.metric_result import MetricResult
@@ -221,7 +221,7 @@ def test_evaluator_constructible_from_workflow_json_evaluator_block(tmp_path: Pa
     """Mimic Olive parsing one evaluator entry from a workflow JSON and constructing us."""
     script = _write_toy_loader_script(tmp_path)
     evaluator_block: dict[str, Any] = {
-        "type": "olmpress_degradation",
+        "type": "chisel_degradation",
         "reference_model": {
             "type": "PyTorchModel",
             "config": {

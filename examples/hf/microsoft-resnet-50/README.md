@@ -28,7 +28,7 @@ All commands run from the **project root**.
 ### Step 1 — Prune
 
 ```bash
-uv run olmpress run --config examples/hf/microsoft-resnet-50/workflow.yaml
+uv run chisel run --config examples/hf/microsoft-resnet-50/workflow.yaml
 ```
 
 Output: `examples/hf/microsoft-resnet-50/outputs/lamp_0.10/model/model.pt`

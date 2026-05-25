@@ -1,14 +1,14 @@
 """Smoke test: package imports cleanly and exposes its subpackages."""
 
-import olmpress
-import olmpress.evaluators
-import olmpress.passes
+import chisel
+import chisel.evaluators
+import chisel.passes
 
 
-def test_olmpress_imports():
-    assert hasattr(olmpress, "main")
+def test_chisel_imports():
+    assert hasattr(chisel, "main")
 
 
 def test_subpackages_present():
-    assert olmpress.evaluators is not None
-    assert olmpress.passes is not None
+    assert chisel.evaluators is not None
+    assert chisel.passes is not None

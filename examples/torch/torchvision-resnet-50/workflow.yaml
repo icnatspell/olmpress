@@ -1,7 +1,7 @@
-# Structured pruning via olmpress + Olive — PyTorchModel path.
+# Structured pruning via chisel + Olive — PyTorchModel path.
 #
 # Run from the project root:
-#   uv run olmpress run --config examples/torch/torchvision-resnet-50/workflow.yaml
+#   uv run chisel run --config examples/torch/torchvision-resnet-50/workflow.yaml
 
 input_model:
   type: PyTorchModel

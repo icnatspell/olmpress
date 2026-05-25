@@ -13,7 +13,7 @@ from olive.evaluator.registry import Registry
 from onnx import TensorProto, helper, numpy_helper
 from torch import nn
 
-from olmpress.evaluators.quantization.evaluator import QuantErrorEvaluator, supported_sub_types
+from chisel.evaluators.quantization.evaluator import QuantErrorEvaluator, supported_sub_types
 
 if TYPE_CHECKING:
     from olive.evaluator.metric_result import MetricResult
@@ -82,7 +82,7 @@ def _make_metric(sub_type_names: list[str]) -> Metric:
 
 
 def test_evaluator_is_registered_under_expected_name():
-    assert Registry.get("olmpress_quant_error") is QuantErrorEvaluator
+    assert Registry.get("chisel_quant_error") is QuantErrorEvaluator
 
 
 def test_supported_sub_types_includes_expected():

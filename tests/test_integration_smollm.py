@@ -15,7 +15,7 @@ import torch
 from olive.evaluator.metric import Metric, MetricType
 from transformers import AutoModelForCausalLM
 
-from olmpress.evaluators.quantization.evaluator import QuantErrorEvaluator
+from chisel.evaluators.quantization.evaluator import QuantErrorEvaluator
 
 pytestmark = pytest.mark.integration
 

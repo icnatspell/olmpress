@@ -225,7 +225,7 @@ def _train(args: argparse.Namespace) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Fine-tune an olmpress-pruned HF ResNet50 (KD or plain CE)"
+        description="Fine-tune an chisel-pruned HF ResNet50 (KD or plain CE)"
     )
     parser.add_argument("--model", required=True, help="Pruned TorchScript .pt file (student)")
     parser.add_argument(

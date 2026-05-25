@@ -103,7 +103,7 @@ eval-base:
 prune:
     #!/usr/bin/env bash
     cd {{ root }}
-    uv run olmpress run --config examples/torch/torchvision-resnet-50/workflow.yaml
+    uv run chisel run --config examples/torch/torchvision-resnet-50/workflow.yaml
 
 # Phase 2: evaluate pruned model
 eval-pruned:

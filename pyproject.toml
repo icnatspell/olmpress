@@ -1,5 +1,5 @@
 [project]
-name = "olmpress"
+name = "chisel"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -37,7 +37,7 @@ torchvision = [
 ]
 
 [project.scripts]
-olmpress = "olmpress:main"
+chisel = "chisel:main"
 
 [build-system]
 requires = ["uv_build>=0.11.14,<0.12.0"]

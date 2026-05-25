@@ -16,10 +16,10 @@ from olive.model.handler.onnx import ONNXModelHandler
 from olive.model.handler.pytorch import PyTorchModelHandlerBase
 from torch import nn
 
-from olmpress.evaluators.quantization._activations import capture as capture_pt
-from olmpress.evaluators.quantization._activations_onnx import capture_onnx
-from olmpress.evaluators.quantization._mapping import View, build_mapping, select_view
-from olmpress.evaluators.quantization._metrics import (
+from chisel.evaluators.quantization._activations import capture as capture_pt
+from chisel.evaluators.quantization._activations_onnx import capture_onnx
+from chisel.evaluators.quantization._mapping import View, build_mapping, select_view
+from chisel.evaluators.quantization._metrics import (
     cosine_similarity,
     kl_divergence,
     mse,
@@ -124,11 +124,11 @@ def _compute_kl(
     return float(kl_divergence(ref, tgt, temperature=temperature).item())
 
 
-@Registry.register("olmpress_quant_error")
+@Registry.register("chisel_quant_error")
 class QuantErrorEvaluator(OliveEvaluator):
     """Olive evaluator that measures per-layer quantization error."""
 
-    _evaluator_type: ClassVar[str] = "olmpress_quant_error"
+    _evaluator_type: ClassVar[str] = "chisel_quant_error"
 
     def __init__(  # noqa: PLR0913
         self,
@@ -282,7 +282,7 @@ class QuantErrorEvaluator(OliveEvaluator):
         from olive.model import ModelConfig
         from olive.passes.onnx.model_builder import ModelBuilder
 
-        cache_dir = self._cross_framework_cache_dir or tempfile.mkdtemp(prefix="olmpress_ref_")
+        cache_dir = self._cross_framework_cache_dir or tempfile.mkdtemp(prefix="chisel_ref_")
         input_handler = ModelConfig.model_validate(
             {"type": "HfModel", "config": {"model_path": model_path}}
         ).create_model()

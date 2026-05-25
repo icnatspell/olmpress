@@ -14,8 +14,8 @@ from olive.model import HfModelHandler, PyTorchModelHandler
 from olive.passes.olive_pass import Pass
 from torch import nn
 
-from olmpress.passes.pytorch.structured_pruning import TorchPruningPass, prune_model
-from olmpress.passes.pytorch.structured_pruning.utils import (
+from chisel.passes.pytorch.structured_pruning import TorchPruningPass, prune_model
+from chisel.passes.pytorch.structured_pruning.utils import (
     collect_unwrapped_parameters,
     resolve_ignored_layers,
 )

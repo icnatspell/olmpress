@@ -1,4 +1,4 @@
-"""Tests for olmpress.activations_onnx using a tiny hand-built ONNX graph."""
+"""Tests for chisel.activations_onnx using a tiny hand-built ONNX graph."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import onnx
 import pytest
 from onnx import TensorProto, helper, numpy_helper
 
-from olmpress.evaluators.quantization._activations_onnx import (
+from chisel.evaluators.quantization._activations_onnx import (
     capture_onnx,
     list_intermediate_tensors,
 )

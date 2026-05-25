@@ -1,4 +1,4 @@
-"""Tests for olmpress.activations (PyTorch forward-hook capture)."""
+"""Tests for chisel.activations (PyTorch forward-hook capture)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from olmpress.evaluators.quantization._activations import ActivationCollector, capture
+from chisel.evaluators.quantization._activations import ActivationCollector, capture
 
 
 class TupleBlock(nn.Module):

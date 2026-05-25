@@ -1,4 +1,4 @@
-"""Tests for olmpress.mapping."""
+"""Tests for chisel.mapping."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from olmpress.evaluators.quantization._mapping import (
+from chisel.evaluators.quantization._mapping import (
     MappingDiff,
     MappingError,
     build_mapping,

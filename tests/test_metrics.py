@@ -1,4 +1,4 @@
-"""Tests for olmpress.metrics."""
+"""Tests for chisel.metrics."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ import math
 import pytest
 import torch
 
-from olmpress.evaluators.quantization._metrics import (
+from chisel.evaluators.quantization._metrics import (
     cosine_similarity,
     kl_divergence,
     mse,

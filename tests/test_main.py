@@ -2,12 +2,12 @@ import sys
 
 import pytest
 
-from olmpress import main
+from chisel import main
 
 
 def test_main_prints_help(capsys, monkeypatch):
-    monkeypatch.setattr(sys, "argv", ["olmpress"])
+    monkeypatch.setattr(sys, "argv", ["chisel"])
     with pytest.raises(SystemExit) as exc_info:
         main()
     assert exc_info.value.code == 0
-    assert "olmpress" in capsys.readouterr().out.lower()
+    assert "chisel" in capsys.readouterr().out.lower()
