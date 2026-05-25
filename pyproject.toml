@@ -44,12 +44,17 @@ requires = ["uv_build>=0.11.14,<0.12.0"]
 build-backend = "uv_build"
 
 [dependency-groups]
-dev = [
+lint = ["ruff>=0.8"]
+typecheck = ["pyrefly>=0.16"]
+test = [
     "pytest>=8",
     "pytest-cov>=5",
-    "ruff>=0.8",
-    "pyrefly>=0.16",
     "prek>=0.4.1",
+]
+dev = [
+    { include-group = "lint" },
+    { include-group = "typecheck" },
+    { include-group = "test" },
 ]
 
 [tool.ruff]
