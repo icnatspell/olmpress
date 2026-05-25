@@ -13,7 +13,12 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 </div>
 
-`chisel` is a model compression library. You construct compression workflows from chisel's passes and evaluators; [Microsoft Olive](https://github.com/microsoft/Olive) orchestrates them — handling model loading, pass sequencing, caching, and output export.
+`chisel` is a model compression toolkit for PyTorch and Hugging Face Transformers that helps you sculpt leaner, faster models for efficient inference at the edge.
+
+It exposes a set of composable compression passes, including quantization, pruning, and low-rank decomposition, that can be applied individually or orchestrated together into a compression pipeline via a simple YAML workflow. Under the hood, `chisel` builds on Microsoft's Olive for workflow orchestration. Each pass is designed to be modular, with first-class support for PyTorch and Transformers models.
+
+`chisel` also provides built-in evaluators to measure the impact of each compression step on model size and accuracy, so you always know the cost of every cut.
+Longer term, `chisel` aims to support export to edge runtimes such as ONNX and ExecuTorch, bringing the full compression-to-deployment pipeline under one roof.
 
 ## Installation
 
@@ -23,7 +28,7 @@ uv add chisel
 
 ## Usage
 
-chisel is driven by Olive workflow configs. The `chisel run` command is a thin wrapper around `olive run` that ensures chisel's passes and evaluators are registered before Olive starts:
+`chisel` is driven by Olive workflow configs. The `chisel run` command is a thin wrapper around `olive run` that ensures chisel's passes and evaluators are registered before Olive starts:
 
 ```bash
 chisel run --config path/to/workflow.yaml
