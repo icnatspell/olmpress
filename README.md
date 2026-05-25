@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/source/images/logo-light-text.png">
     <source media="(prefers-color-scheme: light)" srcset="docs/source/images/logo-dark-text.png">
-    <img alt="chisel" src="docs/source/images/logo-dark-text.png" height="400" style="max-width: 100%;">
+    <img alt="chisel" src="docs/source/images/logo-dark-text.png" height="300" style="max-width: 100%;">
   </picture>
 
 [![CI](https://github.com/icnatspell/chisel/actions/workflows/ci.yml/badge.svg)](https://github.com/icnatspell/chisel/actions/workflows/ci.yml)
@@ -13,20 +13,12 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 </div>
 
-**chisel** is a model compression library built on top of [Microsoft Olive](https://github.com/microsoft/Olive). Olive acts as the orchestrator — it handles model loading, pass sequencing, caching, and output export. chisel contributes the compression passes and evaluators that run inside that pipeline.
-
-Today, chisel ships structured channel pruning for PyTorch models (via [Torch-Pruning](https://github.com/VainF/Torch-Pruning)) and a quantization-error evaluator that measures activation degradation across frameworks. Both plug directly into Olive's pass and evaluator registries, so any Olive workflow config can use them without changes to Olive itself.
+`chisel` is a model compression library. You construct compression workflows from chisel's passes and evaluators; [Microsoft Olive](https://github.com/microsoft/Olive) orchestrates them — handling model loading, pass sequencing, caching, and output export.
 
 ## Installation
 
 ```bash
 uv add chisel
-```
-
-For local development:
-
-```bash
-git clone https://github.com/icnatspell/chisel.git && cd chisel && uv sync
 ```
 
 ## Usage
@@ -67,6 +59,10 @@ See [`examples/`](examples/) for complete end-to-end workflows including evaluat
 | [`examples/torch/torchvision-resnet-50/`](examples/torch/torchvision-resnet-50/) | `torchvision.models.resnet50` | Prune → Eval → Fine-tune (Plain, KD) |
 
 ## Development
+
+```bash
+git clone https://github.com/icnatspell/chisel.git && cd chisel && uv sync
+```
 
 ```bash
 just check   # lint, format, type-check
