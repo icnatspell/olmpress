@@ -31,7 +31,10 @@ def main() -> None:
 
         pkg = OlivePackageConfig.load_default_config().model_dump()
         pkg["passes"]["TorchPruningPass"] = {
-            "module_path": ("chisel.passes.pytorch.structured_pruning.TorchPruningPass")
+            "module_path": "chisel.passes.pytorch.structured_pruning.TorchPruningPass"
+        }
+        pkg["passes"]["FineTunePass"] = {
+            "module_path": "chisel.passes.pytorch.finetune.FineTunePass"
         }
         olive_run(args.config, package_config=pkg)
     else:
