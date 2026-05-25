@@ -1,4 +1,9 @@
-# chisel
+<div align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/source/images/logo-light-text.png">
+    <source media="(prefers-color-scheme: light)" srcset="docs/source/images/logo-dark-text.png">
+    <img alt="chisel" src="docs/source/images/logo-dark-text.png" height="400" style="max-width: 100%;">
+  </picture>
 
 [![CI](https://github.com/icnatspell/chisel/actions/workflows/ci.yml/badge.svg)](https://github.com/icnatspell/chisel/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/python-3.13%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
@@ -6,10 +11,11 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Pyrefly](https://img.shields.io/badge/checked%20by-pyrefly-1F77B4)](https://github.com/facebook/pyrefly)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+</div>
 
 **chisel** is a model compression library built on top of [Microsoft Olive](https://github.com/microsoft/Olive). Olive acts as the orchestrator — it handles model loading, pass sequencing, caching, and output export. chisel contributes the compression passes and evaluators that run inside that pipeline.
 
-Today chisel ships structured channel pruning for PyTorch models (via [Torch-Pruning](https://github.com/VainF/Torch-Pruning)) and a quantization-error evaluator that measures activation degradation across frameworks. Both plug directly into Olive's pass and evaluator registries, so any Olive workflow config can use them without changes to Olive itself.
+Today, chisel ships structured channel pruning for PyTorch models (via [Torch-Pruning](https://github.com/VainF/Torch-Pruning)) and a quantization-error evaluator that measures activation degradation across frameworks. Both plug directly into Olive's pass and evaluator registries, so any Olive workflow config can use them without changes to Olive itself.
 
 ## Installation
 
@@ -20,9 +26,7 @@ uv add chisel
 For local development:
 
 ```bash
-git clone https://github.com/icnatspell/chisel.git
-cd chisel
-just install
+git clone https://github.com/icnatspell/chisel.git && cd chisel && uv sync
 ```
 
 ## Usage
@@ -59,8 +63,8 @@ See [`examples/`](examples/) for complete end-to-end workflows including evaluat
 
 | Example | Model | What it shows |
 |---------|-------|---------------|
-| [`examples/hf/microsoft-resnet-50/`](examples/hf/microsoft-resnet-50/) | HF `microsoft/resnet-50` | Prune → eval → KD fine-tune via `HfModel` |
-| [`examples/torch/torchvision-resnet-50/`](examples/torch/torchvision-resnet-50/) | torchvision ResNet50 | Same pipeline via `PyTorchModel` |
+| [`examples/hf/microsoft-resnet-50/`](examples/hf/microsoft-resnet-50/) | `microsoft/resnet-50` | Prune → Eval → Fine-tune (Plain, KD) |
+| [`examples/torch/torchvision-resnet-50/`](examples/torch/torchvision-resnet-50/) | `torchvision.models.resnet50` | Prune → Eval → Fine-tune (Plain, KD) |
 
 ## Development
 
