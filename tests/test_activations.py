@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from olmpress.activations import ActivationCollector, capture
+from olmpress.evaluators.quantization._activations import ActivationCollector, capture
 
 
 class TupleBlock(nn.Module):

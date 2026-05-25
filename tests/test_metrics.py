@@ -7,7 +7,13 @@ import math
 import pytest
 import torch
 
-from olmpress.metrics import cosine_similarity, kl_divergence, mse, relative_l2, sqnr
+from olmpress.evaluators.quantization._metrics import (
+    cosine_similarity,
+    kl_divergence,
+    mse,
+    relative_l2,
+    sqnr,
+)
 
 # ---- SQNR ----------------------------------------------------------------
 

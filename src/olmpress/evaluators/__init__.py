@@ -1,6 +1,5 @@
 """Custom Olive evaluators."""
 
-from olmpress.evaluators.degradation import DegradationEvaluator
-from olmpress.evaluators.topk_accuracy import ImageNetAccuracyEvaluator
+from olmpress.evaluators.quantization import QuantErrorEvaluator
 
-__all__ = ["DegradationEvaluator", "ImageNetAccuracyEvaluator"]
+__all__ = ["QuantErrorEvaluator"]

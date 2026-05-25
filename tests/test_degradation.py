@@ -1,4 +1,4 @@
-"""End-to-end tests for the DegradationEvaluator."""
+"""End-to-end tests for the QuantErrorEvaluator."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from olive.evaluator.registry import Registry
 from onnx import TensorProto, helper, numpy_helper
 from torch import nn
 
-from olmpress.evaluators.degradation import DegradationEvaluator, supported_sub_types
+from olmpress.evaluators.quantization.evaluator import QuantErrorEvaluator, supported_sub_types
 
 if TYPE_CHECKING:
     from olive.evaluator.metric_result import MetricResult
@@ -82,7 +82,7 @@ def _make_metric(sub_type_names: list[str]) -> Metric:
 
 
 def test_evaluator_is_registered_under_expected_name():
-    assert Registry.get("olmpress_degradation") is DegradationEvaluator
+    assert Registry.get("olmpress_quant_error") is QuantErrorEvaluator
 
 
 def test_supported_sub_types_includes_expected():
@@ -108,7 +108,7 @@ def test_supported_sub_types_includes_expected():
 
 def test_identical_models_yield_perfect_scores():
     ref, tgt = _identical_models()
-    ev = DegradationEvaluator(
+    ev = QuantErrorEvaluator(
         reference_model=lambda: ref,
         inputs=_inputs,
     )
@@ -124,7 +124,7 @@ def test_more_noise_yields_worse_scores():
     ref, tgt_low = _noised_pair(noise=0.01)
     _, tgt_high = _noised_pair(noise=0.1)
     inputs = _inputs()
-    ev_factory = lambda r: DegradationEvaluator(  # noqa: E731
+    ev_factory = lambda r: QuantErrorEvaluator(  # noqa: E731
         reference_model=lambda: r,
         inputs=lambda: inputs,
     )
@@ -142,7 +142,7 @@ def test_more_noise_yields_worse_scores():
 
 def test_sub_type_aggregations_min_max_p50():
     ref, tgt = _noised_pair(noise=0.05)
-    ev = DegradationEvaluator(reference_model=lambda: ref, inputs=_inputs)
+    ev = QuantErrorEvaluator(reference_model=lambda: ref, inputs=_inputs)
     metric = _make_metric(["sqnr_min", "sqnr_max", "sqnr_p50", "sqnr_mean"])
     res = ev.evaluate(tgt, [metric])
     s_min = _val(res, "degradation", "sqnr_min")
@@ -155,7 +155,7 @@ def test_sub_type_aggregations_min_max_p50():
 
 def test_view_linears_only_includes_linear_layers():
     ref, tgt = _noised_pair(noise=0.05)
-    ev = DegradationEvaluator(reference_model=lambda: ref, inputs=_inputs, view="linears")
+    ev = QuantErrorEvaluator(reference_model=lambda: ref, inputs=_inputs, view="linears")
     metric = _make_metric(["sqnr_mean"])
     # Should still produce a value — Linear layers exist
     res = ev.evaluate(tgt, [metric])
@@ -164,7 +164,7 @@ def test_view_linears_only_includes_linear_layers():
 
 def test_unknown_sub_type_raises():
     ref, tgt = _identical_models()
-    ev = DegradationEvaluator(reference_model=lambda: ref, inputs=_inputs)
+    ev = QuantErrorEvaluator(reference_model=lambda: ref, inputs=_inputs)
     metric = _make_metric(["totally_made_up"])
     with pytest.raises(ValueError, match="unknown sub_type"):
         ev.evaluate(tgt, [metric])
@@ -172,7 +172,7 @@ def test_unknown_sub_type_raises():
 
 def test_missing_loaders_raises():
     _, tgt = _identical_models()
-    ev = DegradationEvaluator()  # no loaders
+    ev = QuantErrorEvaluator()  # no loaders
     with pytest.raises(RuntimeError, match="requires both"):
         ev.evaluate(tgt, [_make_metric(["sqnr_mean"])])
 
@@ -181,7 +181,7 @@ def test_pytorch_onnx_cross_framework_requires_dict_spec():
     # Cross-framework path requires a dict spec (for ModelBuilder); a callable has no model_path.
     ref, _ = _identical_models()
     onnx_model = _build_tiny_onnx()
-    ev = DegradationEvaluator(reference_model=lambda: ref, inputs=_inputs)
+    ev = QuantErrorEvaluator(reference_model=lambda: ref, inputs=_inputs)
     with pytest.raises(RuntimeError, match="dict spec"):
         ev.evaluate(onnx_model, [_make_metric(["sqnr_mean"])])
 
@@ -212,7 +212,7 @@ def test_onnx_identical_models_yield_perfect_scores():
     ref = _build_tiny_onnx(w1_val=1.0)
     tgt = _build_tiny_onnx(w1_val=1.0)
     x = np.array([[-1, 0, 1, 2], [3, -2, 0, 1]], dtype=np.float32)
-    ev = DegradationEvaluator(
+    ev = QuantErrorEvaluator(
         reference_model=lambda: ref,
         inputs=lambda: {"input": x},
         logits_layer="lm_head",
@@ -227,7 +227,7 @@ def test_onnx_perturbed_models_have_finite_error():
     ref = _build_tiny_onnx(w1_val=1.0)
     tgt = _build_tiny_onnx(w1_val=1.01)
     x = np.array([[-1, 0, 1, 2], [3, -2, 0, 1]], dtype=np.float32)
-    ev = DegradationEvaluator(
+    ev = QuantErrorEvaluator(
         reference_model=lambda: ref,
         inputs=lambda: {"input": x},
         logits_layer="lm_head",
@@ -248,7 +248,7 @@ def test_onnx_perturbed_models_have_finite_error():
 
 def test_returns_metric_result_keyed_by_joint_key():
     ref, tgt = _identical_models()
-    ev = DegradationEvaluator(reference_model=lambda: ref, inputs=_inputs)
+    ev = QuantErrorEvaluator(reference_model=lambda: ref, inputs=_inputs)
     metric = _make_metric(["sqnr_mean", "kl"])
     res = ev.evaluate(tgt, [metric])
     assert set(res.root.keys()) == {"degradation-sqnr_mean", "degradation-kl"}
@@ -256,7 +256,7 @@ def test_returns_metric_result_keyed_by_joint_key():
 
 def test_multiple_metric_groups_are_keyed_separately():
     ref, tgt = _identical_models()
-    ev = DegradationEvaluator(reference_model=lambda: ref, inputs=_inputs)
+    ev = QuantErrorEvaluator(reference_model=lambda: ref, inputs=_inputs)
     m1 = Metric(name="block_err", type=MetricType.CUSTOM, sub_types=[{"name": "sqnr_mean"}])
     m2 = Metric(name="logits_err", type=MetricType.CUSTOM, sub_types=[{"name": "kl"}])
     res = ev.evaluate(tgt, [m1, m2])

@@ -16,10 +16,16 @@ from olive.model.handler.onnx import ONNXModelHandler
 from olive.model.handler.pytorch import PyTorchModelHandlerBase
 from torch import nn
 
-from olmpress.activations import capture as capture_pt
-from olmpress.activations_onnx import capture_onnx
-from olmpress.mapping import View, build_mapping, select_view
-from olmpress.metrics import cosine_similarity, kl_divergence, mse, relative_l2, sqnr
+from olmpress.evaluators.quantization._activations import capture as capture_pt
+from olmpress.evaluators.quantization._activations_onnx import capture_onnx
+from olmpress.evaluators.quantization._mapping import View, build_mapping, select_view
+from olmpress.evaluators.quantization._metrics import (
+    cosine_similarity,
+    kl_divergence,
+    mse,
+    relative_l2,
+    sqnr,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -118,11 +124,11 @@ def _compute_kl(
     return float(kl_divergence(ref, tgt, temperature=temperature).item())
 
 
-@Registry.register("olmpress_degradation")
-class DegradationEvaluator(OliveEvaluator):
+@Registry.register("olmpress_quant_error")
+class QuantErrorEvaluator(OliveEvaluator):
     """Olive evaluator that measures per-layer quantization error."""
 
-    _evaluator_type: ClassVar[str] = "olmpress_degradation"
+    _evaluator_type: ClassVar[str] = "olmpress_quant_error"
 
     def __init__(  # noqa: PLR0913
         self,
@@ -166,7 +172,7 @@ class DegradationEvaluator(OliveEvaluator):
         """Run reference vs target and return the requested sub-metrics."""
         del device
         if self._reference_loader is None or self._inputs_loader is None:
-            msg = "DegradationEvaluator requires both reference_model and inputs."
+            msg = "QuantErrorEvaluator requires both reference_model and inputs."
             raise RuntimeError(msg)
 
         reference = self._reference_loader()
@@ -185,7 +191,7 @@ class DegradationEvaluator(OliveEvaluator):
             )
         else:
             msg = (
-                f"DegradationEvaluator: reference/target type mismatch — "
+                f"QuantErrorEvaluator: reference/target type mismatch — "
                 f"reference={type(reference).__name__}, target={type(target).__name__}."
             )
             raise TypeError(msg)
@@ -252,7 +258,7 @@ class DegradationEvaluator(OliveEvaluator):
 
         if self._reference_spec is None:
             msg = (
-                "DegradationEvaluator: cross-framework comparison requires reference_model "
+                "QuantErrorEvaluator: cross-framework comparison requires reference_model "
                 "to be a dict spec (e.g., {type: HfModel, config: {model_path: ...}})"
             )
             raise RuntimeError(msg)
@@ -261,7 +267,7 @@ class DegradationEvaluator(OliveEvaluator):
         model_path = (spec.get("config") or spec).get("model_path")
         if model_path is None:
             msg = (
-                "DegradationEvaluator: cross-framework conversion requires "
+                "QuantErrorEvaluator: cross-framework conversion requires "
                 "model_path in reference_model"
             )
             raise RuntimeError(msg)
@@ -338,7 +344,7 @@ class DegradationEvaluator(OliveEvaluator):
                 sub_name = sub.name
                 if sub_name not in _SUB_TYPE_TABLE:
                     msg = (
-                        f"DegradationEvaluator: unknown sub_type {sub_name!r}. "
+                        f"QuantErrorEvaluator: unknown sub_type {sub_name!r}. "
                         f"Supported: {sorted(_SUB_TYPE_TABLE)}"
                     )
                     raise ValueError(msg)

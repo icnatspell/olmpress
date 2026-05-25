@@ -1,4 +1,4 @@
-"""Integration tests for DegradationEvaluator using HuggingFaceTB/SmolLM2-135M-Instruct.
+"""Integration tests for QuantErrorEvaluator using HuggingFaceTB/SmolLM2-135M-Instruct.
 
 Downloads the model on first run (~270 MB) and caches it via HuggingFace Hub.
 Run selectively with: pytest tests/test_integration_smollm.py
@@ -15,7 +15,7 @@ import torch
 from olive.evaluator.metric import Metric, MetricType
 from transformers import AutoModelForCausalLM
 
-from olmpress.evaluators.degradation import DegradationEvaluator
+from olmpress.evaluators.quantization.evaluator import QuantErrorEvaluator
 
 pytestmark = pytest.mark.integration
 
@@ -77,7 +77,7 @@ def smollm_inputs() -> dict[str, torch.Tensor]:
 
 def test_identical_smollm_perfect_scores(smollm, smollm_inputs):
     """Comparing the model to itself must yield near-perfect per-layer scores."""
-    ev = DegradationEvaluator(
+    ev = QuantErrorEvaluator(
         reference_model=lambda: smollm,
         inputs=lambda: smollm_inputs,
     )
@@ -92,7 +92,7 @@ def test_identical_smollm_perfect_scores(smollm, smollm_inputs):
 def test_perturbed_smollm_shows_degradation(smollm, smollm_inputs):
     """Noise-perturbed weights must produce measurable, finite degradation on all metrics."""
     noisy = _perturb(smollm, noise=0.05)
-    ev = DegradationEvaluator(
+    ev = QuantErrorEvaluator(
         reference_model=lambda: smollm,
         inputs=lambda: smollm_inputs,
     )
@@ -107,7 +107,7 @@ def test_perturbed_smollm_shows_degradation(smollm, smollm_inputs):
 
 def test_higher_noise_yields_worse_scores(smollm, smollm_inputs):
     """Larger weight perturbation must monotonically worsen all reported metrics."""
-    ev = DegradationEvaluator(
+    ev = QuantErrorEvaluator(
         reference_model=lambda: smollm,
         inputs=lambda: smollm_inputs,
     )
@@ -126,7 +126,7 @@ def test_higher_noise_yields_worse_scores(smollm, smollm_inputs):
 def test_view_linears_produces_finite_ordered_scores(smollm, smollm_inputs):
     """view='linears' must limit capture to Linear layers and produce valid, ordered scores."""
     noisy = _perturb(smollm, noise=0.05)
-    ev = DegradationEvaluator(
+    ev = QuantErrorEvaluator(
         reference_model=lambda: smollm,
         inputs=lambda: smollm_inputs,
         view="linears",

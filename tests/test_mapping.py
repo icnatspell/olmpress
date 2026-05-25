@@ -6,7 +6,7 @@ import pytest
 import torch
 from torch import nn
 
-from olmpress.mapping import (
+from olmpress.evaluators.quantization._mapping import (
     MappingDiff,
     MappingError,
     build_mapping,

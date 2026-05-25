@@ -7,7 +7,7 @@ import onnx
 import pytest
 from onnx import TensorProto, helper, numpy_helper
 
-from olmpress.activations_onnx import (
+from olmpress.evaluators.quantization._activations_onnx import (
     capture_onnx,
     list_intermediate_tensors,
 )
